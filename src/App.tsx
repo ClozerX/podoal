@@ -822,7 +822,6 @@ function ResultView({
         <div className="total-time-display">
           <div className="total-time-label">⏱️ 총 소요 시간</div>
           <div className="total-time-value">{formatTime(totalTime)}</div>
-          <div className="total-time-ms">{totalTime.toFixed(3)}초</div>
           <div 
             className="rank-percentile" 
             style={{ color: getRankColor() }}
