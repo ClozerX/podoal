@@ -36,6 +36,7 @@ function App() {
   const [totalStartTime, setTotalStartTime] = useState<Date | null>(null)
   const [totalTime, setTotalTime] = useState<number>(0)
   const [roundStartTime, setRoundStartTime] = useState<number>(0)
+  const [savedRecordId, setSavedRecordId] = useState<number | null>(null)
   const [nickname, setNickname] = useState<string>(() => {
     return localStorage.getItem('podoal_nickname') || ''
   })
@@ -264,7 +265,7 @@ function App() {
   const autoSaveRanking = async (gameTime: number, gameTimes: number[]) => {
     if (!isSupabaseConfigured()) {
       console.log('⚠️ Supabase 미설정 - DB 저장 건너뜀')
-      return
+      return null
     }
     
     try {
@@ -276,17 +277,26 @@ function App() {
         round_times: gameTimes
       }
 
-      const { error } = await supabase
+      const { data, error } = await supabase
         .from('rankings')
         .insert([record])
+        .select('id')
 
       if (error) {
         console.error('❌ 자동 저장 실패:', error)
+        return null
       } else {
-        console.log('✅ 게임 기록 자동 저장 완료:', record)
+        console.log('✅ 게임 기록 자동 저장 완료:', data)
+        if (data && data.length > 0) {
+          const recordId = data[0].id
+          setSavedRecordId(recordId)
+          return recordId
+        }
+        return null
       }
     } catch (error) {
       console.error('❌ 자동 저장 에러:', error)
+      return null
     }
   }
 
@@ -307,6 +317,7 @@ function App() {
     setTotalStartTime(null)
     setTotalTime(0)
     setRoundStartTime(0)
+    setSavedRecordId(null)
     setQueueNumber(Math.floor(Math.random() * 6000) + 3000)
     setPhase('waitingQueue')
   }
@@ -499,6 +510,7 @@ function App() {
           captchaTime={captchaTime}
           reactionTimes={reactionTimes}
           nickname={nickname}
+          savedRecordId={savedRecordId}
           updateNickname={updateNickname}
           restartGame={restartGame}
           goToLeaderboard={goToLeaderboard}
@@ -680,6 +692,7 @@ function ResultView({
   captchaTime,
   reactionTimes,
   nickname,
+  savedRecordId,
   updateNickname,
   restartGame,
   goToLeaderboard,
@@ -689,6 +702,7 @@ function ResultView({
   captchaTime: number
   reactionTimes: number[]
   nickname: string
+  savedRecordId: number | null
   updateNickname: (newNickname: string) => void
   restartGame: () => void
   goToLeaderboard: () => void
@@ -701,40 +715,43 @@ function ResultView({
   const [isBreakdownCollapsed, setIsBreakdownCollapsed] = useState(true)
 
   useEffect(() => {
-    calculateRank()
-  }, [totalTime])
+    if (savedRecordId) {
+      calculateRank()
+    }
+  }, [savedRecordId])
 
   const calculateRank = async () => {
     setLoadingRank(true)
     try {
-      if (!isSupabaseConfigured()) {
+      if (!isSupabaseConfigured() || !savedRecordId) {
         setRankPercentile(null)
         setDailyRank(null)
         setLoadingRank(false)
         return
       }
 
-      // 전체 랭킹 데이터 조회
+      // 저장된 레코드 정보 조회
+      const { data: myRecord, error: myError } = await supabase
+        .from('rankings')
+        .select('*')
+        .eq('id', savedRecordId)
+        .single()
+
+      if (myError || !myRecord) {
+        console.error('레코드 조회 실패:', myError)
+        setRankPercentile(null)
+        setDailyRank(null)
+        setLoadingRank(false)
+        return
+      }
+
+      // 전체 랭킹에서 내 순위 계산
       const { data: allData, error: allError } = await supabase
         .from('rankings')
-        .select('total_time')
+        .select('id, total_time')
         .order('total_time', { ascending: true })
 
       if (allError) throw allError
-
-      // 오늘 날짜 (한국 시간 기준)
-      const today = new Date()
-      const koreanDate = new Date(today.getTime() + (9 * 60 * 60 * 1000))
-      const todayStr = koreanDate.toISOString().split('T')[0]
-
-      // 오늘 랭킹 데이터 조회
-      const { data: todayData, error: todayError } = await supabase
-        .from('rankings')
-        .select('total_time')
-        .gte('created_at', `${todayStr}T00:00:00`)
-        .order('total_time', { ascending: true })
-
-      if (todayError) throw todayError
 
       if (!allData || allData.length === 0) {
         setRankPercentile(null)
@@ -744,17 +761,33 @@ function ResultView({
       }
 
       // 전체 퍼센타일 계산
-      const fasterCount = allData.filter(rank => rank.total_time < totalTime).length
-      const totalCount = allData.length + 1
-      const percentile = ((fasterCount + 1) / totalCount) * 100
+      const myRankIndex = allData.findIndex(r => r.id === savedRecordId)
+      const totalCount = allData.length
+      const percentile = ((myRankIndex + 1) / totalCount) * 100
       setRankPercentile(percentile)
 
-      // 오늘 순위 계산
+      // 오늘 랭킹에서 내 순위 계산 (한국 시간 기준)
+      const today = new Date()
+      const koreanDate = new Date(today.getTime() + (9 * 60 * 60 * 1000))
+      const todayStr = koreanDate.toISOString().split('T')[0]
+
+      const { data: todayData, error: todayError } = await supabase
+        .from('rankings')
+        .select('id, total_time')
+        .gte('created_at', `${todayStr}T00:00:00`)
+        .order('total_time', { ascending: true })
+
+      if (todayError) throw todayError
+
       if (todayData && todayData.length > 0) {
-        const todayFasterCount = todayData.filter(rank => rank.total_time < totalTime).length
-        setDailyRank(todayFasterCount + 1)
+        const myTodayRankIndex = todayData.findIndex(r => r.id === savedRecordId)
+        if (myTodayRankIndex !== -1) {
+          setDailyRank(myTodayRankIndex + 1)
+        } else {
+          setDailyRank(null)
+        }
       } else {
-        setDailyRank(1) // 오늘 첫 기록
+        setDailyRank(null)
       }
     } catch (error) {
       console.error('Error calculating rank:', error)
