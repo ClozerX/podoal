@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react'
 import './App.css'
 import { supabase, RankingRecord, isSupabaseConfigured } from './supabaseClient'
 
-type GamePhase = 'waitingQueue' | 'captcha' | 'playing' | 'finished' | 'leaderboard'
+type GamePhase = 'waitingQueue' | 'captcha' | 'playing' | 'finished' | 'leaderboard' | 'chat'
 
 interface Seat {
   id: string
@@ -42,6 +42,12 @@ function App() {
   })
   const [showNicknameInput, setShowNicknameInput] = useState(false)
   const [isSavingRank, setIsSavingRank] = useState(false)
+  
+  // 채팅 관련 상태
+  const [onlineUsers, setOnlineUsers] = useState(0)
+  const [chatMessages, setChatMessages] = useState<any[]>([])
+  const [chatInput, setChatInput] = useState('')
+  const [isSendingMessage, setIsSendingMessage] = useState(false)
   
   const [bestTime, setBestTime] = useState<number>(() => {
     const saved = localStorage.getItem('bestTime')
@@ -321,6 +327,117 @@ function App() {
   const goToLeaderboard = () => {
     setPhase('leaderboard')
   }
+  
+  const goToChat = () => {
+    setPhase('chat')
+  }
+  
+  const goBackFromChat = () => {
+    setPhase('waitingQueue')
+  }
+  
+  // 접속자 수 업데이트
+  useEffect(() => {
+    if (!isSupabaseConfigured() || !nickname) return
+    
+    // 자신의 온라인 상태 업데이트
+    const updateOnlineStatus = async () => {
+      try {
+        await supabase
+          .from('online_users')
+          .upsert({ nickname, last_seen: new Date().toISOString() })
+      } catch (error) {
+        console.error('Error updating online status:', error)
+      }
+    }
+    
+    // 접속자 수 조회
+    const fetchOnlineCount = async () => {
+      try {
+        const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000).toISOString()
+        const { data, error } = await supabase
+          .from('online_users')
+          .select('*')
+          .gte('last_seen', fiveMinutesAgo)
+        
+        if (error) throw error
+        setOnlineUsers(data?.length || 0)
+      } catch (error) {
+        console.error('Error fetching online count:', error)
+      }
+    }
+    
+    // 초기 업데이트
+    updateOnlineStatus()
+    fetchOnlineCount()
+    
+    // 30초마다 상태 업데이트
+    const statusInterval = setInterval(updateOnlineStatus, 30000)
+    // 10초마다 접속자 수 조회
+    const countInterval = setInterval(fetchOnlineCount, 10000)
+    
+    return () => {
+      clearInterval(statusInterval)
+      clearInterval(countInterval)
+    }
+  }, [nickname])
+  
+  // 채팅 메시지 로드
+  useEffect(() => {
+    if (phase !== 'chat' || !isSupabaseConfigured()) return
+    
+    const loadMessages = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('chat_messages')
+          .select('*')
+          .order('created_at', { ascending: true })
+          .limit(100)
+        
+        if (error) throw error
+        setChatMessages(data || [])
+      } catch (error) {
+        console.error('Error loading messages:', error)
+      }
+    }
+    
+    loadMessages()
+    
+    // 실시간 채팅 구독
+    const channel = supabase
+      .channel('chat_messages')
+      .on('postgres_changes', 
+        { event: 'INSERT', schema: 'public', table: 'chat_messages' },
+        (payload) => {
+          setChatMessages(prev => [...prev, payload.new])
+        }
+      )
+      .subscribe()
+    
+    return () => {
+      supabase.removeChannel(channel)
+    }
+  }, [phase])
+  
+  // 채팅 메시지 전송
+  const sendMessage = async () => {
+    if (!chatInput.trim() || !nickname || isSendingMessage) return
+    
+    setIsSendingMessage(true)
+    try {
+      const { error } = await supabase
+        .from('chat_messages')
+        .insert([{ nickname, message: chatInput.trim() }])
+      
+      if (error) throw error
+      setChatInput('')
+    } catch (error) {
+      console.error('Error sending message:', error)
+      alert('메시지 전송에 실패했습니다.')
+    } finally {
+      setIsSendingMessage(false)
+    }
+  }
 
   return (
     <div className="app">
@@ -371,6 +488,26 @@ function App() {
       
       {phase === 'leaderboard' && (
         <LeaderboardView onBack={() => setPhase('finished')} />
+      )}
+      
+      {phase === 'chat' && (
+        <ChatView 
+          nickname={nickname}
+          messages={chatMessages}
+          chatInput={chatInput}
+          setChatInput={setChatInput}
+          sendMessage={sendMessage}
+          isSending={isSendingMessage}
+          onBack={goBackFromChat}
+        />
+      )}
+      
+      {/* 왼쪽 하단 접속자 수 버튼 */}
+      {phase !== 'chat' && onlineUsers > 0 && (
+        <button className="online-users-button" onClick={goToChat}>
+          <span className="online-icon">👥</span>
+          <span className="online-count">{onlineUsers}</span>
+        </button>
       )}
     </div>
   )
@@ -905,6 +1042,101 @@ function LeaderboardView({ onBack }: { onBack: () => void }) {
             ))}
           </div>
         )}
+      </div>
+    </div>
+  )
+}
+
+// 💬 채팅 화면
+function ChatView({ 
+  nickname, 
+  messages, 
+  chatInput, 
+  setChatInput, 
+  sendMessage, 
+  isSending,
+  onBack 
+}: {
+  nickname: string
+  messages: any[]
+  chatInput: string
+  setChatInput: (value: string) => void
+  sendMessage: () => void
+  isSending: boolean
+  onBack: () => void
+}) {
+  const messagesEndRef = useRef<HTMLDivElement>(null)
+  
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
+  }, [messages])
+  
+  const handleKeyPress = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault()
+      sendMessage()
+    }
+  }
+  
+  return (
+    <div className="chat-view">
+      <div className="chat-container">
+        <div className="chat-header">
+          <button className="chat-back-button" onClick={onBack}>
+            ← 뒤로
+          </button>
+          <h2 className="chat-title">💬 채팅방</h2>
+          <div className="chat-subtitle">실시간 채팅</div>
+        </div>
+        
+        <div className="chat-messages">
+          {messages.length === 0 ? (
+            <div className="chat-empty">
+              <span className="chat-empty-icon">💬</span>
+              <p>아직 메시지가 없습니다.</p>
+              <p className="chat-empty-subtitle">첫 메시지를 남겨보세요!</p>
+            </div>
+          ) : (
+            messages.map((msg, index) => (
+              <div 
+                key={msg.id || index} 
+                className={`chat-message ${msg.nickname === nickname ? 'own-message' : ''}`}
+              >
+                <div className="message-nickname">{msg.nickname}</div>
+                <div className="message-bubble">
+                  <div className="message-text">{msg.message}</div>
+                  <div className="message-time">
+                    {new Date(msg.created_at).toLocaleTimeString('ko-KR', { 
+                      hour: '2-digit', 
+                      minute: '2-digit' 
+                    })}
+                  </div>
+                </div>
+              </div>
+            ))
+          )}
+          <div ref={messagesEndRef} />
+        </div>
+        
+        <div className="chat-input-container">
+          <input
+            type="text"
+            className="chat-input"
+            placeholder={nickname ? "메시지를 입력하세요..." : "닉네임을 먼저 설정해주세요"}
+            value={chatInput}
+            onChange={(e) => setChatInput(e.target.value)}
+            onKeyPress={handleKeyPress}
+            disabled={!nickname || isSending}
+            maxLength={200}
+          />
+          <button 
+            className="chat-send-button" 
+            onClick={sendMessage}
+            disabled={!chatInput.trim() || !nickname || isSending}
+          >
+            {isSending ? '⏳' : '📤'}
+          </button>
+        </div>
       </div>
     </div>
   )
