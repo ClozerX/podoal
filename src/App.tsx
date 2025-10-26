@@ -1039,19 +1039,27 @@ function LeaderboardView({ onBack }: { onBack: () => void }) {
         .order('total_time', { ascending: true })
         .limit(100)
 
+      // 한국 시간 기준으로 계산 (UTC+9)
       const now = new Date()
+      const koreanTime = new Date(now.getTime() + (9 * 60 * 60 * 1000))
       
       if (period === 'daily') {
-        const today = now.toISOString().split('T')[0]
-        query = query.gte('created_at', `${today}T00:00:00`)
+        // 일간: 오늘 00:00 (한국 시간)
+        const todayKST = koreanTime.toISOString().split('T')[0]
+        query = query.gte('created_at', `${todayKST}T00:00:00+09:00`)
       } else if (period === 'weekly') {
-        const weekStart = new Date(now)
-        weekStart.setDate(now.getDate() - now.getDay())
-        weekStart.setHours(0, 0, 0, 0)
-        query = query.gte('created_at', weekStart.toISOString())
+        // 주간: 이번 주 월요일 00:00 (한국 시간)
+        const koreanDay = koreanTime.getDay() // 0(일) ~ 6(토)
+        const daysFromMonday = koreanDay === 0 ? 6 : koreanDay - 1 // 월요일 기준
+        const weekStart = new Date(koreanTime)
+        weekStart.setDate(koreanTime.getDate() - daysFromMonday)
+        const weekStartKST = weekStart.toISOString().split('T')[0]
+        query = query.gte('created_at', `${weekStartKST}T00:00:00+09:00`)
       } else if (period === 'monthly') {
-        const monthStart = new Date(now.getFullYear(), now.getMonth(), 1)
-        query = query.gte('created_at', monthStart.toISOString())
+        // 월간: 이번 달 1일 00:00 (한국 시간)
+        const year = koreanTime.getFullYear()
+        const month = String(koreanTime.getMonth() + 1).padStart(2, '0')
+        query = query.gte('created_at', `${year}-${month}-01T00:00:00+09:00`)
       }
 
       const { data, error } = await query
