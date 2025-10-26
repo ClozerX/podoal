@@ -22,12 +22,14 @@ body {
 /* 🕓 대기열 화면 */
 .waiting-queue {
   width: 100%;
-  height: 100%;
+  height: 100vh;
   background: linear-gradient(135deg, rgba(147, 51, 234, 0.6), rgba(99, 102, 241, 0.9));
   display: flex;
   align-items: center;
   justify-content: center;
   animation: fadeIn 0.5s ease;
+  overflow: hidden;
+  box-sizing: border-box;
 }
 
 .queue-content {
@@ -145,17 +147,56 @@ body {
     font-size: 1rem;
     min-width: 80px;
   }
+  
+  /* 보안문자 모바일 최적화 */
+  .captcha-modal {
+    padding: 25px 20px;
+    max-width: 90vw;
+    width: auto;
+  }
+  
+  .captcha-title {
+    font-size: 1.3rem;
+    margin-bottom: 8px;
+  }
+  
+  .captcha-subtitle {
+    font-size: 0.85rem;
+    margin-bottom: 15px;
+  }
+  
+  .captcha-code-container {
+    padding: 15px;
+    margin-bottom: 15px;
+  }
+  
+  .captcha-code {
+    font-size: 2rem;
+  }
+  
+  .captcha-input {
+    padding: 10px;
+    font-size: 1rem;
+  }
+  
+  .captcha-submit {
+    padding: 10px;
+    font-size: 0.95rem;
+  }
 }
 
 /* 🔒 보안문자 화면 */
 .captcha-view {
   width: 100%;
-  height: 100%;
+  height: 100vh;
   background: linear-gradient(135deg, rgba(147, 51, 234, 0.6), rgba(99, 102, 241, 0.9));
   display: flex;
   align-items: center;
   justify-content: center;
   animation: fadeIn 0.5s ease;
+  overflow: hidden;
+  box-sizing: border-box;
+  padding: 20px;
 }
 
 .captcha-modal {
@@ -303,34 +344,43 @@ body {
 /* 🎮 게임 화면 */
 .game-view {
   width: 100%;
-  height: 100%;
+  height: 100vh;
   background: linear-gradient(135deg, #f5f5f5, #e5e5e5);
   display: flex;
   flex-direction: column;
   align-items: center;
-  padding: 20px;
-  overflow: auto;
+  justify-content: flex-start;
+  padding: 60px 15px 15px;
+  overflow: hidden;
   animation: fadeIn 0.3s ease;
+  box-sizing: border-box;
 }
 
 .game-title {
-  font-size: 1.8rem;
+  font-size: 1.5rem;
   font-weight: 800;
   color: #333;
-  margin-bottom: 10px;
+  margin-bottom: 8px;
+  text-align: center;
+  line-height: 1.2;
+  flex-shrink: 0;
 }
 
 .result-text {
-  font-size: 1.2rem;
+  font-size: 1rem;
   font-weight: 600;
   color: #9333EA;
-  margin-bottom: 10px;
+  margin-bottom: 6px;
+  text-align: center;
+  flex-shrink: 0;
 }
 
 .round-text {
-  font-size: 1rem;
+  font-size: 0.95rem;
   color: #666;
-  margin-bottom: 20px;
+  margin-bottom: 12px;
+  text-align: center;
+  flex-shrink: 0;
 }
 
 .seats-container {
@@ -341,10 +391,13 @@ body {
   background: white;
   border-radius: 12px;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
-  max-width: calc(100vw - 40px);
-  max-height: calc(100vh - 200px);
+  width: auto;
+  max-width: calc(100vw - 30px);
+  flex: 1;
+  min-height: 0;
   overflow: auto;
   align-items: center;
+  justify-content: center;
   -webkit-overflow-scrolling: touch;
 }
 
@@ -394,9 +447,13 @@ body {
 
 /* 📱 모바일 최적화 - 좌석 크기 자동 조정 */
 @media (max-width: 480px) {
+  .game-view {
+    padding: 55px 10px 10px;
+  }
+  
   .seat {
-    width: 15px;
-    height: 15px;
+    width: 14px;
+    height: 14px;
     border-radius: 2px;
   }
   
@@ -406,23 +463,31 @@ body {
   
   .seats-container {
     gap: 1.5px;
-    padding: 10px;
+    padding: 8px;
     max-width: calc(100vw - 20px);
-    max-height: calc(100vh - 180px);
   }
   
   .game-title {
     font-size: 1.1rem;
-    margin-bottom: 10px;
+    margin-bottom: 6px;
   }
   
   .result-text {
-    font-size: 1rem;
-    margin-bottom: 10px;
+    font-size: 0.9rem;
+    margin-bottom: 4px;
+  }
+  
+  .round-text {
+    font-size: 0.85rem;
+    margin-bottom: 8px;
   }
 }
 
 @media (min-width: 481px) and (max-width: 768px) {
+  .game-view {
+    padding: 60px 15px 15px;
+  }
+  
   .seat {
     width: 16px;
     height: 16px;
@@ -434,11 +499,21 @@ body {
   
   .game-title {
     font-size: 1.3rem;
+    margin-bottom: 8px;
+  }
+  
+  .result-text {
+    font-size: 1rem;
+    margin-bottom: 6px;
+  }
+  
+  .round-text {
+    font-size: 0.9rem;
+    margin-bottom: 10px;
   }
   
   .seats-container {
     max-width: calc(100vw - 30px);
-    max-height: calc(100vh - 180px);
     padding: 12px;
     gap: 1.5px;
   }
@@ -452,7 +527,6 @@ body {
   
   .seats-container {
     max-width: calc(100vw - 60px);
-    max-height: calc(100vh - 200px);
   }
 }
 
@@ -475,13 +549,16 @@ body {
 /* 📊 결과 화면 */
 .result-view {
   width: 100%;
-  height: 100%;
+  height: 100vh;
   background: linear-gradient(180deg, rgba(147, 51, 234, 0.8), rgba(99, 102, 241, 0.9));
   display: flex;
   align-items: center;
   justify-content: center;
   position: relative;
   animation: fadeIn 0.5s ease;
+  overflow: auto;
+  box-sizing: border-box;
+  padding: 20px;
 }
 
 .confetti-canvas {
