@@ -92,7 +92,7 @@ body {
 /* ⏱️ 타이머 디스플레이 */
 .timer-display {
   position: fixed;
-  top: 20px;
+  bottom: 20px;
   right: 20px;
   display: flex;
   align-items: center;
@@ -103,12 +103,12 @@ body {
   border-radius: 50px;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
   z-index: 1000;
-  animation: slideInRight 0.5s ease;
+  animation: slideInUp 0.5s ease;
 }
 
-@keyframes slideInRight {
-  0% { transform: translateX(100px); opacity: 0; }
-  100% { transform: translateX(0); opacity: 1; }
+@keyframes slideInUp {
+  0% { transform: translateY(100px); opacity: 0; }
+  100% { transform: translateY(0); opacity: 1; }
 }
 
 .timer-icon {
@@ -133,7 +133,7 @@ body {
 /* 모바일 타이머 */
 @media (max-width: 480px) {
   .timer-display {
-    top: 10px;
+    bottom: 10px;
     right: 10px;
     padding: 8px 12px;
     gap: 6px;
@@ -350,35 +350,35 @@ body {
   flex-direction: column;
   align-items: center;
   justify-content: flex-start;
-  padding: 60px 15px 15px;
+  padding: 15px 15px 90px;
   overflow: hidden;
   animation: fadeIn 0.3s ease;
   box-sizing: border-box;
 }
 
 .game-title {
-  font-size: 1.5rem;
+  font-size: 1.3rem;
   font-weight: 800;
   color: #333;
-  margin-bottom: 8px;
+  margin-bottom: 6px;
   text-align: center;
-  line-height: 1.2;
+  line-height: 1.1;
   flex-shrink: 0;
 }
 
 .result-text {
-  font-size: 1rem;
+  font-size: 0.95rem;
   font-weight: 600;
   color: #9333EA;
-  margin-bottom: 6px;
+  margin-bottom: 4px;
   text-align: center;
   flex-shrink: 0;
 }
 
 .round-text {
-  font-size: 0.95rem;
+  font-size: 0.9rem;
   color: #666;
-  margin-bottom: 12px;
+  margin-bottom: 10px;
   text-align: center;
   flex-shrink: 0;
 }
@@ -448,7 +448,7 @@ body {
 /* 📱 모바일 최적화 - 좌석 크기 자동 조정 */
 @media (max-width: 480px) {
   .game-view {
-    padding: 55px 10px 10px;
+    padding: 10px 10px 80px;
   }
   
   .seat {
@@ -468,24 +468,24 @@ body {
   }
   
   .game-title {
-    font-size: 1.1rem;
-    margin-bottom: 6px;
-  }
-  
-  .result-text {
-    font-size: 0.9rem;
+    font-size: 1rem;
     margin-bottom: 4px;
   }
   
-  .round-text {
+  .result-text {
     font-size: 0.85rem;
-    margin-bottom: 8px;
+    margin-bottom: 3px;
+  }
+  
+  .round-text {
+    font-size: 0.8rem;
+    margin-bottom: 6px;
   }
 }
 
 @media (min-width: 481px) and (max-width: 768px) {
   .game-view {
-    padding: 60px 15px 15px;
+    padding: 15px 15px 90px;
   }
   
   .seat {
@@ -498,18 +498,18 @@ body {
   }
   
   .game-title {
-    font-size: 1.3rem;
-    margin-bottom: 8px;
-  }
-  
-  .result-text {
-    font-size: 1rem;
+    font-size: 1.2rem;
     margin-bottom: 6px;
   }
   
+  .result-text {
+    font-size: 0.95rem;
+    margin-bottom: 5px;
+  }
+  
   .round-text {
-    font-size: 0.9rem;
-    margin-bottom: 10px;
+    font-size: 0.85rem;
+    margin-bottom: 8px;
   }
   
   .seats-container {
