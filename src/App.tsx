@@ -416,6 +416,17 @@ function CaptchaView({
   verifyCaptcha: () => void
   generateCaptcha: () => void
 }) {
+  // 랜덤 스타일을 한 번만 생성 (captchaCode가 바뀔 때만)
+  const charStyles = useRef<any[]>([])
+  
+  useEffect(() => {
+    charStyles.current = captchaCode.split('').map(() => ({
+      color: `hsl(${Math.random() * 60 + 180}, 70%, 60%)`,
+      transform: `rotate(${Math.random() * 30 - 15}deg) translateY(${Math.random() * 10 - 5}px)`,
+      fontSize: `${Math.random() * 10 + 35}px`
+    }))
+  }, [captchaCode])
+
   const handleKeyPress = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter') {
       verifyCaptcha()
@@ -435,11 +446,7 @@ function CaptchaView({
               <span 
                 key={index} 
                 className="captcha-char"
-                style={{
-                  color: `hsl(${Math.random() * 60 + 180}, 70%, 60%)`,
-                  transform: `rotate(${Math.random() * 30 - 15}deg) translateY(${Math.random() * 10 - 5}px)`,
-                  fontSize: `${Math.random() * 10 + 35}px`
-                }}
+                style={charStyles.current[index] || {}}
               >
                 {char}
               </span>
@@ -542,11 +549,67 @@ function ResultView({
   goToLeaderboard: () => void
 }) {
   const [tempNickname, setTempNickname] = useState(nickname)
+  const [rankPercentile, setRankPercentile] = useState<number | null>(null)
+  const [loadingRank, setLoadingRank] = useState(true)
+
+  useEffect(() => {
+    calculateRank()
+  }, [totalTime])
+
+  const calculateRank = async () => {
+    setLoadingRank(true)
+    try {
+      // 전체 랭킹 데이터 조회
+      const { data, error } = await supabase
+        .from('rankings')
+        .select('total_time')
+        .order('total_time', { ascending: true })
+
+      if (error) throw error
+
+      if (!data || data.length === 0) {
+        setRankPercentile(null)
+        setLoadingRank(false)
+        return
+      }
+
+      // 현재 시간보다 빠른 사람 수 계산
+      const fasterCount = data.filter(rank => rank.total_time < totalTime).length
+      const totalCount = data.length + 1 // 현재 사용자 포함
+      const percentile = ((fasterCount + 1) / totalCount) * 100
+
+      setRankPercentile(percentile)
+    } catch (error) {
+      console.error('Error calculating rank:', error)
+      setRankPercentile(null)
+    } finally {
+      setLoadingRank(false)
+    }
+  }
 
   const formatTime = (seconds: number) => {
     const mins = Math.floor(seconds / 60)
     const secs = (seconds % 60).toFixed(3)
     return mins > 0 ? `${mins}분 ${secs}초` : `${secs}초`
+  }
+
+  const getRankMessage = () => {
+    if (loadingRank) return '순위 계산중...'
+    if (rankPercentile === null) return '첫 번째 도전자!'
+    
+    if (rankPercentile <= 1) return '🏆 TOP 1% 전설의 손가락!'
+    if (rankPercentile <= 5) return '🥇 상위 5% 티켓팅 고수!'
+    if (rankPercentile <= 10) return '🥈 상위 10% 빠른 손가락!'
+    if (rankPercentile <= 25) return '🥉 상위 25% 우수한 실력!'
+    if (rankPercentile <= 50) return '📈 상위 50% 평균 이상!'
+    return `📊 상위 ${rankPercentile.toFixed(1)}%`
+  }
+
+  const getRankColor = () => {
+    if (rankPercentile === null) return '#FCD34D'
+    if (rankPercentile <= 5) return '#FFD700'
+    if (rankPercentile <= 25) return '#FFA500'
+    return '#5EEAD4'
   }
 
   const detailSum = captchaTime + reactionTimes.reduce((a, b) => a + b, 0)
@@ -574,6 +637,12 @@ function ResultView({
           <div className="total-time-label">⏱️ 총 소요 시간</div>
           <div className="total-time-value">{formatTime(totalTime)}</div>
           <div className="total-time-ms">{totalTime.toFixed(3)}초</div>
+          <div 
+            className="rank-percentile" 
+            style={{ color: getRankColor() }}
+          >
+            {getRankMessage()}
+          </div>
         </div>
         
         <div className="time-breakdown">
