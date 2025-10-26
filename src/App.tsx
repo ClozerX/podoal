@@ -349,7 +349,10 @@ function App() {
       try {
         await supabase
           .from('online_users')
-          .upsert({ nickname, last_seen: new Date().toISOString() })
+          .upsert(
+            { nickname, last_seen: new Date().toISOString() },
+            { onConflict: 'nickname', ignoreDuplicates: false }
+          )
       } catch (error) {
         console.error('Error updating online status:', error)
       }
