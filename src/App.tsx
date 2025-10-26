@@ -40,8 +40,6 @@ function App() {
   const [nickname, setNickname] = useState<string>(() => {
     return localStorage.getItem('podoal_nickname') || ''
   })
-  const [showNicknameInput, setShowNicknameInput] = useState(false)
-  const [isSavingRank, setIsSavingRank] = useState(false)
   
   // 채팅 관련 상태
   const [onlineUsers, setOnlineUsers] = useState(0)
@@ -246,12 +244,13 @@ function App() {
     }
   }
 
-  const endGame = (finalReactionTimes: number[]) => {
+  const endGame = async (finalReactionTimes: number[]) => {
     setIsRunning(false)
     
     // 전체 시간 계산
+    let finalTotalTime = 0
     if (totalStartTime) {
-      const finalTotalTime = (Date.now() - totalStartTime.getTime()) / 1000
+      finalTotalTime = (Date.now() - totalStartTime.getTime()) / 1000
       setTotalTime(finalTotalTime)
     }
     
@@ -267,45 +266,47 @@ function App() {
       localStorage.setItem('avgTime', avg.toString())
     }
     
+    // 자동으로 DB에 저장
+    await autoSaveRanking(finalTotalTime, finalReactionTimes)
+    
     setPhase('finished')
   }
-
-  const saveRanking = async (playerNickname: string) => {
-    if (!playerNickname.trim()) {
-      alert('닉네임을 입력해주세요!')
-      return
-    }
-
+  
+  // 자동 랭킹 저장 함수
+  const autoSaveRanking = async (gameTime: number, gameTimes: number[]) => {
     if (!isSupabaseConfigured()) {
-      alert('⚠️ 데이터베이스 연결이 설정되지 않았습니다.\n관리자에게 문의해주세요.')
+      console.log('⚠️ Supabase 미설정 - DB 저장 건너뜀')
       return
     }
-
-    setIsSavingRank(true)
+    
     try {
+      const playerNickname = nickname || '익명'
       const record: RankingRecord = {
-        nickname: playerNickname.trim(),
-        total_time: totalTime,
+        nickname: playerNickname,
+        total_time: gameTime,
         captcha_time: captchaTime,
-        round_times: reactionTimes
+        round_times: gameTimes
       }
 
       const { error } = await supabase
         .from('rankings')
         .insert([record])
 
-      if (error) throw error
-
-      // 닉네임 저장
-      localStorage.setItem('podoal_nickname', playerNickname.trim())
-      setNickname(playerNickname.trim())
-      alert('🎉 랭킹이 저장되었습니다!')
-      setShowNicknameInput(false)
+      if (error) {
+        console.error('❌ 자동 저장 실패:', error)
+      } else {
+        console.log('✅ 게임 기록 자동 저장 완료:', record)
+      }
     } catch (error) {
-      console.error('Error saving ranking:', error)
-      alert('랭킹 저장에 실패했습니다. 다시 시도해주세요.')
-    } finally {
-      setIsSavingRank(false)
+      console.error('❌ 자동 저장 에러:', error)
+    }
+  }
+
+  const updateNickname = (newNickname: string) => {
+    if (newNickname.trim()) {
+      localStorage.setItem('podoal_nickname', newNickname.trim())
+      setNickname(newNickname.trim())
+      alert('✅ 닉네임이 저장되었습니다!\n다음 게임부터 적용됩니다.')
     }
   }
 
@@ -319,7 +320,6 @@ function App() {
     setTotalTime(0)
     setCurrentTime(0)
     setRoundStartTime(0)
-    setShowNicknameInput(false)
     setQueueNumber(Math.floor(Math.random() * 6000) + 3000)
     setPhase('waitingQueue')
   }
@@ -518,10 +518,7 @@ function App() {
           captchaTime={captchaTime}
           reactionTimes={reactionTimes}
           nickname={nickname}
-          showNicknameInput={showNicknameInput}
-          setShowNicknameInput={setShowNicknameInput}
-          saveRanking={saveRanking}
-          isSavingRank={isSavingRank}
+          updateNickname={updateNickname}
           restartGame={restartGame}
           goToLeaderboard={goToLeaderboard}
           goToChat={goToChat}
@@ -719,10 +716,7 @@ function ResultView({
   captchaTime,
   reactionTimes,
   nickname,
-  showNicknameInput,
-  setShowNicknameInput,
-  saveRanking,
-  isSavingRank,
+  updateNickname,
   restartGame,
   goToLeaderboard,
   goToChat
@@ -731,10 +725,7 @@ function ResultView({
   captchaTime: number
   reactionTimes: number[]
   nickname: string
-  showNicknameInput: boolean
-  setShowNicknameInput: (show: boolean) => void
-  saveRanking: (nickname: string) => void
-  isSavingRank: boolean
+  updateNickname: (newNickname: string) => void
   restartGame: () => void
   goToLeaderboard: () => void
   goToChat: () => void
@@ -812,18 +803,6 @@ function ResultView({
 
   const detailSum = captchaTime + reactionTimes.reduce((a, b) => a + b, 0)
 
-  const handleSaveClick = () => {
-    if (nickname) {
-      saveRanking(nickname)
-    } else {
-      setShowNicknameInput(true)
-    }
-  }
-
-  const handleNicknameSubmit = () => {
-    saveRanking(tempNickname)
-  }
-
   return (
     <div className="result-view">
       <ConfettiAnimation />
@@ -874,30 +853,35 @@ function ResultView({
           )}
         </div>
 
-        {showNicknameInput ? (
-          <div className="nickname-input-container">
-            <input
-              type="text"
-              className="nickname-input"
-              placeholder="닉네임 입력 (2-10자)"
-              value={tempNickname}
-              onChange={(e) => setTempNickname(e.target.value)}
-              maxLength={10}
-              autoFocus
-            />
-            <button 
-              className="save-rank-button" 
-              onClick={handleNicknameSubmit}
-              disabled={isSavingRank || tempNickname.trim().length < 2}
-            >
-              {isSavingRank ? '저장중...' : '✅ 랭킹 저장'}
-            </button>
-          </div>
-        ) : (
-          <button className="save-rank-button" onClick={handleSaveClick} disabled={isSavingRank}>
-            {nickname ? `🏆 ${nickname}으로 랭킹 저장` : '🏆 랭킹 저장'}
+        <div className="auto-save-notice">
+          ✅ 기록이 자동으로 저장되었습니다!
+          {nickname ? (
+            <div className="current-nickname">닉네임: <strong>{nickname}</strong></div>
+          ) : (
+            <div className="current-nickname">닉네임: <strong>익명</strong></div>
+          )}
+        </div>
+        
+        <div className="nickname-change-container">
+          <input
+            type="text"
+            className="nickname-input"
+            placeholder={nickname || "닉네임 설정 (선택사항)"}
+            value={tempNickname}
+            onChange={(e) => setTempNickname(e.target.value)}
+            maxLength={10}
+          />
+          <button 
+            className="nickname-save-button" 
+            onClick={() => {
+              updateNickname(tempNickname)
+              setTempNickname('')
+            }}
+            disabled={tempNickname.trim().length < 2}
+          >
+            💾 닉네임 변경
           </button>
-        )}
+        </div>
         
         <div className="result-buttons">
           <button className="leaderboard-button" onClick={goToLeaderboard}>
