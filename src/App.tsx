@@ -132,17 +132,12 @@ function App() {
     }
   }
 
-  const makeStairPattern = (rows: number, cols: number): (Seat | null)[][] => {
+  const makeRectangleGrid = (rows: number, cols: number): (Seat | null)[][] => {
     const grid: (Seat | null)[][] = []
     for (let r = 0; r < rows; r++) {
       const row: (Seat | null)[] = []
-      const limit = Math.min(cols, r + Math.floor(Math.random() * 3) + 3)
       for (let c = 0; c < cols; c++) {
-        if (c < limit) {
-          row.push({ id: `${r}-${c}-${Math.random()}`, isActive: false })
-        } else {
-          row.push(null)
-        }
+        row.push({ id: `${r}-${c}-${Math.random()}`, isActive: false })
       }
       grid.push(row)
     }
@@ -165,7 +160,7 @@ function App() {
     
     setResultText(`라운드 ${currentRound} 준비 중...`)
     const [rows, cols] = seatGrid(currentRound)
-    const newSeats = makeStairPattern(rows, cols)
+    const newSeats = makeRectangleGrid(rows, cols)
     setSeats(newSeats)
     setSelectedSeats(new Set())
     setOpenSeats([])
