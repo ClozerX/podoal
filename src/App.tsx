@@ -206,15 +206,16 @@ function App() {
     if (newSelected.size === 1) {
       setResultText('1/2 선택됨')
     } else if (newSelected.size === 2) {
-      // 라운드 완료 시간 계산 (타이머 기준)
-      if (totalStartTime) {
-        const currentElapsed = (Date.now() - totalStartTime.getTime()) / 1000
-        const roundTime = currentElapsed - roundStartTime
-        const newReactionTimes = [...reactionTimes, roundTime]
-        setReactionTimes(newReactionTimes)
-        setResultText(`Round ${round} 완료: ${roundTime.toFixed(3)}초`)
-        
-        setTimeout(() => {
+      setResultText(`Round ${round} 완료!`)
+      
+      setTimeout(() => {
+        // 라운드 완료 시간 계산 (전환 대기 시간 포함)
+        if (totalStartTime) {
+          const currentElapsed = (Date.now() - totalStartTime.getTime()) / 1000
+          const roundTime = currentElapsed - roundStartTime
+          const newReactionTimes = [...reactionTimes, roundTime]
+          setReactionTimes(newReactionTimes)
+          
           if (round < totalRounds) {
             const nextRoundNum = round + 1
             setRound(nextRoundNum)
@@ -222,8 +223,8 @@ function App() {
           } else {
             endGame(newReactionTimes)
           }
-        }, 1200)
-      }
+        }
+      }, 1200)
     }
   }
 
