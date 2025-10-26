@@ -1,7 +1,8 @@
 import { useState, useEffect, useRef } from 'react'
 import './App.css'
+import { supabase, RankingRecord } from './supabaseClient'
 
-type GamePhase = 'waitingQueue' | 'captcha' | 'playing' | 'finished'
+type GamePhase = 'waitingQueue' | 'captcha' | 'playing' | 'finished' | 'leaderboard'
 
 interface Seat {
   id: string
@@ -36,6 +37,11 @@ function App() {
   const [totalTime, setTotalTime] = useState<number>(0)
   const [currentTime, setCurrentTime] = useState<number>(0)
   const [roundStartTime, setRoundStartTime] = useState<number>(0)
+  const [nickname, setNickname] = useState<string>(() => {
+    return localStorage.getItem('podoal_nickname') || ''
+  })
+  const [showNicknameInput, setShowNicknameInput] = useState(false)
+  const [isSavingRank, setIsSavingRank] = useState(false)
   
   const [bestTime, setBestTime] = useState<number>(() => {
     const saved = localStorage.getItem('bestTime')
@@ -252,6 +258,40 @@ function App() {
     setPhase('finished')
   }
 
+  const saveRanking = async (playerNickname: string) => {
+    if (!playerNickname.trim()) {
+      alert('닉네임을 입력해주세요!')
+      return
+    }
+
+    setIsSavingRank(true)
+    try {
+      const record: RankingRecord = {
+        nickname: playerNickname.trim(),
+        total_time: totalTime,
+        captcha_time: captchaTime,
+        round_times: reactionTimes
+      }
+
+      const { error } = await supabase
+        .from('rankings')
+        .insert([record])
+
+      if (error) throw error
+
+      // 닉네임 저장
+      localStorage.setItem('podoal_nickname', playerNickname.trim())
+      setNickname(playerNickname.trim())
+      alert('🎉 랭킹이 저장되었습니다!')
+      setShowNicknameInput(false)
+    } catch (error) {
+      console.error('Error saving ranking:', error)
+      alert('랭킹 저장에 실패했습니다. 다시 시도해주세요.')
+    } finally {
+      setIsSavingRank(false)
+    }
+  }
+
   const restartGame = () => {
     setRound(1)
     setReactionTimes([])
@@ -262,8 +302,13 @@ function App() {
     setTotalTime(0)
     setCurrentTime(0)
     setRoundStartTime(0)
+    setShowNicknameInput(false)
     setQueueNumber(Math.floor(Math.random() * 6000) + 3000)
     setPhase('waitingQueue')
+  }
+
+  const goToLeaderboard = () => {
+    setPhase('leaderboard')
   }
 
   return (
@@ -303,8 +348,18 @@ function App() {
           totalTime={totalTime}
           captchaTime={captchaTime}
           reactionTimes={reactionTimes}
+          nickname={nickname}
+          showNicknameInput={showNicknameInput}
+          setShowNicknameInput={setShowNicknameInput}
+          saveRanking={saveRanking}
+          isSavingRank={isSavingRank}
           restartGame={restartGame}
+          goToLeaderboard={goToLeaderboard}
         />
+      )}
+      
+      {phase === 'leaderboard' && (
+        <LeaderboardView onBack={() => setPhase('finished')} />
       )}
     </div>
   )
@@ -467,21 +522,46 @@ function ResultView({
   totalTime,
   captchaTime,
   reactionTimes,
-  restartGame
+  nickname,
+  showNicknameInput,
+  setShowNicknameInput,
+  saveRanking,
+  isSavingRank,
+  restartGame,
+  goToLeaderboard
 }: {
   totalTime: number
   captchaTime: number
   reactionTimes: number[]
+  nickname: string
+  showNicknameInput: boolean
+  setShowNicknameInput: (show: boolean) => void
+  saveRanking: (nickname: string) => void
+  isSavingRank: boolean
   restartGame: () => void
+  goToLeaderboard: () => void
 }) {
+  const [tempNickname, setTempNickname] = useState(nickname)
+
   const formatTime = (seconds: number) => {
     const mins = Math.floor(seconds / 60)
     const secs = (seconds % 60).toFixed(3)
     return mins > 0 ? `${mins}분 ${secs}초` : `${secs}초`
   }
 
-  // 세부 시간 합계
   const detailSum = captchaTime + reactionTimes.reduce((a, b) => a + b, 0)
+
+  const handleSaveClick = () => {
+    if (nickname) {
+      saveRanking(nickname)
+    } else {
+      setShowNicknameInput(true)
+    }
+  }
+
+  const handleNicknameSubmit = () => {
+    saveRanking(tempNickname)
+  }
 
   return (
     <div className="result-view">
@@ -513,10 +593,40 @@ function ResultView({
             <span className="breakdown-value">{detailSum.toFixed(3)}초</span>
           </div>
         </div>
+
+        {showNicknameInput ? (
+          <div className="nickname-input-container">
+            <input
+              type="text"
+              className="nickname-input"
+              placeholder="닉네임 입력 (2-10자)"
+              value={tempNickname}
+              onChange={(e) => setTempNickname(e.target.value)}
+              maxLength={10}
+              autoFocus
+            />
+            <button 
+              className="save-rank-button" 
+              onClick={handleNicknameSubmit}
+              disabled={isSavingRank || tempNickname.trim().length < 2}
+            >
+              {isSavingRank ? '저장중...' : '✅ 랭킹 저장'}
+            </button>
+          </div>
+        ) : (
+          <button className="save-rank-button" onClick={handleSaveClick} disabled={isSavingRank}>
+            {nickname ? `🏆 ${nickname}으로 랭킹 저장` : '🏆 랭킹 저장'}
+          </button>
+        )}
         
-        <button className="restart-button" onClick={restartGame}>
-          🔄 다시 도전하기
-        </button>
+        <div className="result-buttons">
+          <button className="leaderboard-button" onClick={goToLeaderboard}>
+            📊 랭킹 보기
+          </button>
+          <button className="restart-button" onClick={restartGame}>
+            🔄 다시 도전
+          </button>
+        </div>
       </div>
     </div>
   )
@@ -579,5 +689,134 @@ function ConfettiAnimation() {
   return <canvas ref={canvasRef} className="confetti-canvas" />
 }
 
-export default App
+// 🏆 리더보드 화면
+function LeaderboardView({ onBack }: { onBack: () => void }) {
+  const [period, setPeriod] = useState<'daily' | 'weekly' | 'monthly'>('daily')
+  const [rankings, setRankings] = useState<any[]>([])
+  const [loading, setLoading] = useState(true)
 
+  useEffect(() => {
+    loadRankings()
+  }, [period])
+
+  const loadRankings = async () => {
+    setLoading(true)
+    try {
+      let query = supabase
+        .from('rankings')
+        .select('*')
+        .order('total_time', { ascending: true })
+        .limit(100)
+
+      const now = new Date()
+      
+      if (period === 'daily') {
+        const today = now.toISOString().split('T')[0]
+        query = query.gte('created_at', `${today}T00:00:00`)
+      } else if (period === 'weekly') {
+        const weekStart = new Date(now)
+        weekStart.setDate(now.getDate() - now.getDay())
+        weekStart.setHours(0, 0, 0, 0)
+        query = query.gte('created_at', weekStart.toISOString())
+      } else if (period === 'monthly') {
+        const monthStart = new Date(now.getFullYear(), now.getMonth(), 1)
+        query = query.gte('created_at', monthStart.toISOString())
+      }
+
+      const { data, error } = await query
+
+      if (error) throw error
+      setRankings(data || [])
+    } catch (error) {
+      console.error('Error loading rankings:', error)
+      setRankings([])
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const formatTime = (seconds: number) => {
+    return `${seconds.toFixed(3)}초`
+  }
+
+  const getRankEmoji = (rank: number) => {
+    if (rank === 1) return '🥇'
+    if (rank === 2) return '🥈'
+    if (rank === 3) return '🥉'
+    return `${rank}`
+  }
+
+  const getPeriodLabel = () => {
+    if (period === 'daily') return '일간'
+    if (period === 'weekly') return '주간'
+    return '월간'
+  }
+
+  return (
+    <div className="leaderboard-view">
+      <div className="leaderboard-container">
+        <button className="back-button" onClick={onBack}>
+          ← 돌아가기
+        </button>
+        
+        <h1 className="leaderboard-title">🏆 랭킹 보드</h1>
+        
+        <div className="period-tabs">
+          <button 
+            className={`period-tab ${period === 'daily' ? 'active' : ''}`}
+            onClick={() => setPeriod('daily')}
+          >
+            📅 일간
+          </button>
+          <button 
+            className={`period-tab ${period === 'weekly' ? 'active' : ''}`}
+            onClick={() => setPeriod('weekly')}
+          >
+            📆 주간
+          </button>
+          <button 
+            className={`period-tab ${period === 'monthly' ? 'active' : ''}`}
+            onClick={() => setPeriod('monthly')}
+          >
+            📊 월간
+          </button>
+        </div>
+
+        <div className="period-info">
+          {getPeriodLabel()} 랭킹 (상위 100명)
+        </div>
+
+        {loading ? (
+          <div className="loading-spinner">⏳ 로딩중...</div>
+        ) : rankings.length === 0 ? (
+          <div className="no-rankings">
+            아직 {getPeriodLabel()} 랭킹이 없습니다.<br />
+            첫 번째 랭커가 되어보세요! 🚀
+          </div>
+        ) : (
+          <div className="rankings-list">
+            {rankings.map((rank, index) => (
+              <div key={rank.id} className={`rank-item ${index < 3 ? 'top-three' : ''}`}>
+                <div className="rank-position">{getRankEmoji(index + 1)}</div>
+                <div className="rank-info">
+                  <div className="rank-nickname">{rank.nickname}</div>
+                  <div className="rank-time">{formatTime(rank.total_time)}</div>
+                </div>
+                <div className="rank-date">
+                  {new Date(rank.created_at).toLocaleDateString('ko-KR', {
+                    month: 'short',
+                    day: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit'
+                  })}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  )
+}
+
+export default App
