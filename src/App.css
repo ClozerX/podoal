@@ -87,6 +87,66 @@ body {
   opacity: 0.9;
 }
 
+/* ⏱️ 타이머 디스플레이 */
+.timer-display {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(10px);
+  padding: 12px 20px;
+  border-radius: 50px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+  z-index: 1000;
+  animation: slideInRight 0.5s ease;
+}
+
+@keyframes slideInRight {
+  0% { transform: translateX(100px); opacity: 0; }
+  100% { transform: translateX(0); opacity: 1; }
+}
+
+.timer-icon {
+  font-size: 1.5rem;
+  animation: pulse-timer 2s ease-in-out infinite;
+}
+
+@keyframes pulse-timer {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.1); }
+}
+
+.timer-value {
+  font-family: 'Courier New', monospace;
+  font-size: 1.3rem;
+  font-weight: 800;
+  color: #9333EA;
+  min-width: 100px;
+  text-align: center;
+}
+
+/* 모바일 타이머 */
+@media (max-width: 480px) {
+  .timer-display {
+    top: 10px;
+    right: 10px;
+    padding: 8px 12px;
+    gap: 6px;
+  }
+  
+  .timer-icon {
+    font-size: 1.2rem;
+  }
+  
+  .timer-value {
+    font-size: 1rem;
+    min-width: 80px;
+  }
+}
+
 /* 🔒 보안문자 화면 */
 .captcha-view {
   width: 100%;
@@ -447,77 +507,78 @@ body {
   opacity: 0.95;
 }
 
-.captcha-time-display {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  gap: 10px;
-  padding: 12px 20px;
-  background: rgba(255, 255, 255, 0.12);
-  border-radius: 10px;
-  margin-bottom: 15px;
+/* 총 소요 시간 표시 */
+.total-time-display {
+  text-align: center;
+  padding: 30px;
+  margin: 25px 0;
+  background: linear-gradient(135deg, rgba(147, 51, 234, 0.2), rgba(236, 72, 153, 0.2));
+  border-radius: 20px;
+  border: 3px solid rgba(255, 255, 255, 0.3);
 }
 
-.captcha-time-label {
-  font-size: 1rem;
-  font-weight: 600;
+.total-time-label {
+  font-size: 1.2rem;
+  font-weight: 700;
+  margin-bottom: 10px;
   opacity: 0.95;
 }
 
-.captcha-time-value {
-  font-size: 1.2rem;
-  font-weight: 800;
-  color: #5EEAD4;
+.total-time-value {
+  font-size: 3rem;
+  font-weight: 900;
+  color: #FCD34D;
+  text-shadow: 2px 2px 8px rgba(0, 0, 0, 0.3);
+  margin: 10px 0;
+  font-family: 'Courier New', monospace;
 }
 
-.round-times {
+.total-time-ms {
+  font-size: 1rem;
+  opacity: 0.8;
+  margin-top: 5px;
+}
+
+/* 세부 기록 */
+.time-breakdown {
   width: 100%;
   max-width: 400px;
   margin: 20px auto;
   padding: 15px;
   background: rgba(255, 255, 255, 0.08);
   border-radius: 12px;
-  max-height: 200px;
+  max-height: 250px;
   overflow-y: auto;
 }
 
-.round-times-title {
+.breakdown-title {
   font-size: 1.1rem;
   font-weight: 700;
   margin-bottom: 12px;
   text-align: center;
 }
 
-.round-time-item {
+.breakdown-item {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 8px 12px;
+  padding: 10px 15px;
   margin: 6px 0;
   background: rgba(255, 255, 255, 0.1);
   border-radius: 8px;
   font-size: 0.95rem;
 }
 
-.round-label {
+.breakdown-label {
   font-weight: 600;
   opacity: 0.9;
 }
 
-.round-time {
+.breakdown-value {
   font-weight: 700;
   font-size: 1.05rem;
-  color: #FCD34D;
-}
-
-.result-stats {
-  font-size: 1.5rem;
-  font-weight: 700;
-  margin-bottom: 30px;
-  margin-top: 15px;
-  padding: 15px;
-  background: rgba(255, 255, 255, 0.15);
-  border-radius: 12px;
+  color: #5EEAD4;
+  font-family: 'Courier New', monospace;
 }
 
 .restart-button {

@@ -33,6 +33,9 @@ function App() {
   const [captchaInput, setCaptchaInput] = useState('')
   const [captchaStartTime, setCaptchaStartTime] = useState<Date | null>(null)
   const [captchaTime, setCaptchaTime] = useState<number>(0)
+  const [totalStartTime, setTotalStartTime] = useState<Date | null>(null)
+  const [totalTime, setTotalTime] = useState<number>(0)
+  const [currentTime, setCurrentTime] = useState<number>(0)
   
   const [bestTime, setBestTime] = useState<number>(() => {
     const saved = localStorage.getItem('bestTime')
@@ -62,7 +65,9 @@ function App() {
           setTimeout(() => {
             setPhase('captcha')
             generateCaptcha()
-            setCaptchaStartTime(new Date())
+            const startTime = new Date()
+            setCaptchaStartTime(startTime)
+            setTotalStartTime(startTime)
           }, 200)
         }
         return Math.max(0, next)
@@ -72,28 +77,17 @@ function App() {
     return () => clearInterval(interval)
   }, [phase])
 
-  // ✅ Countdown logic (disabled - skipping countdown)
-  // useEffect(() => {
-  //   if (phase !== 'countdown') return
-  //   
-  //   setTimerCount(3)
-  //   const interval = setInterval(() => {
-  //     setTimerCount(prev => {
-  //       if (prev > 0) {
-  //         return prev - 1
-  //       } else {
-  //         clearInterval(interval)
-  //         setTimeout(() => {
-  //           setPhase('playing')
-  //           startGame()
-  //         }, 500)
-  //         return 0
-  //       }
-  //     })
-  //   }, 1000)
-  //   
-  //   return () => clearInterval(interval)
-  // }, [phase])
+  // ✅ Timer update logic
+  useEffect(() => {
+    if ((phase === 'captcha' || phase === 'playing') && totalStartTime) {
+      const interval = setInterval(() => {
+        const elapsed = (Date.now() - totalStartTime.getTime()) / 1000
+        setCurrentTime(elapsed)
+      }, 10) // 10ms 단위로 업데이트
+      
+      return () => clearInterval(interval)
+    }
+  }, [phase, totalStartTime])
 
   // 보안문자 생성
   const generateCaptcha = () => {
@@ -226,6 +220,13 @@ function App() {
 
   const endGame = (finalReactionTimes: number[]) => {
     setIsRunning(false)
+    
+    // 전체 시간 계산
+    if (totalStartTime) {
+      const finalTotalTime = (Date.now() - totalStartTime.getTime()) / 1000
+      setTotalTime(finalTotalTime)
+    }
+    
     const avg = finalReactionTimes.reduce((a, b) => a + b, 0) / finalReactionTimes.length
     const best = Math.min(...finalReactionTimes)
     
@@ -247,6 +248,9 @@ function App() {
     setSelectedSeats(new Set())
     setCaptchaTime(0)
     setCaptchaInput('')
+    setTotalStartTime(null)
+    setTotalTime(0)
+    setCurrentTime(0)
     setQueueNumber(Math.floor(Math.random() * 6000) + 3000)
     setPhase('waitingQueue')
   }
@@ -258,34 +262,56 @@ function App() {
       )}
       
       {phase === 'captcha' && (
-        <CaptchaView
-          captchaCode={captchaCode}
-          captchaInput={captchaInput}
-          setCaptchaInput={setCaptchaInput}
-          verifyCaptcha={verifyCaptcha}
-          generateCaptcha={generateCaptcha}
-        />
+        <>
+          <Timer currentTime={currentTime} />
+          <CaptchaView
+            captchaCode={captchaCode}
+            captchaInput={captchaInput}
+            setCaptchaInput={setCaptchaInput}
+            verifyCaptcha={verifyCaptcha}
+            generateCaptcha={generateCaptcha}
+          />
+        </>
       )}
       
       {phase === 'playing' && (
-        <GameView
-          round={round}
-          totalRounds={totalRounds}
-          resultText={resultText}
-          seats={seats}
-          handleTap={handleTap}
-        />
+        <>
+          <Timer currentTime={currentTime} />
+          <GameView
+            round={round}
+            totalRounds={totalRounds}
+            resultText={resultText}
+            seats={seats}
+            handleTap={handleTap}
+          />
+        </>
       )}
       
       {phase === 'finished' && (
         <ResultView
-          bestTime={bestTime}
-          avgTime={avgTime}
-          reactionTimes={reactionTimes}
+          totalTime={totalTime}
           captchaTime={captchaTime}
+          reactionTimes={reactionTimes}
           restartGame={restartGame}
         />
       )}
+    </div>
+  )
+}
+
+// ⏱️ 타이머 컴포넌트
+function Timer({ currentTime }: { currentTime: number }) {
+  const formatTime = (seconds: number) => {
+    const mins = Math.floor(seconds / 60)
+    const secs = Math.floor(seconds % 60)
+    const ms = Math.floor((seconds % 1) * 100)
+    return `${mins}:${secs.toString().padStart(2, '0')}.${ms.toString().padStart(2, '0')}`
+  }
+
+  return (
+    <div className="timer-display">
+      <div className="timer-icon">⏱️</div>
+      <div className="timer-value">{formatTime(currentTime)}</div>
     </div>
   )
 }
@@ -427,43 +453,49 @@ function GameView({
 
 // 📊 결과 화면
 function ResultView({
-  bestTime,
-  avgTime,
-  reactionTimes,
+  totalTime,
   captchaTime,
+  reactionTimes,
   restartGame
 }: {
-  bestTime: number
-  avgTime: number
-  reactionTimes: number[]
+  totalTime: number
   captchaTime: number
+  reactionTimes: number[]
   restartGame: () => void
 }) {
+  const formatTime = (seconds: number) => {
+    const mins = Math.floor(seconds / 60)
+    const secs = (seconds % 60).toFixed(3)
+    return mins > 0 ? `${mins}분 ${secs}초` : `${secs}초`
+  }
+
   return (
     <div className="result-view">
       <ConfettiAnimation />
       <div className="result-card">
-        <h1 className="result-title">🎉 축하합니다!</h1>
-        <p className="result-subtitle">티켓 예매에 성공했습니다!</p>
+        <h1 className="result-title">🎉 예매 성공!</h1>
+        <p className="result-subtitle">티켓팅에 성공했습니다!</p>
         
-        <div className="captcha-time-display">
-          <span className="captcha-time-label">🔒 보안문자 입력 시간:</span>
-          <span className="captcha-time-value">{captchaTime.toFixed(3)}초</span>
+        <div className="total-time-display">
+          <div className="total-time-label">⏱️ 총 소요 시간</div>
+          <div className="total-time-value">{formatTime(totalTime)}</div>
+          <div className="total-time-ms">{totalTime.toFixed(3)}초</div>
         </div>
         
-        <div className="round-times">
-          <h3 className="round-times-title">⏱️ 라운드별 기록</h3>
+        <div className="time-breakdown">
+          <h3 className="breakdown-title">📊 세부 기록</h3>
+          <div className="breakdown-item">
+            <span className="breakdown-label">🔒 보안문자</span>
+            <span className="breakdown-value">{captchaTime.toFixed(3)}초</span>
+          </div>
           {reactionTimes.map((time, index) => (
-            <div key={index} className="round-time-item">
-              <span className="round-label">Round {index + 1}</span>
-              <span className="round-time">{time.toFixed(3)}초</span>
+            <div key={index} className="breakdown-item">
+              <span className="breakdown-label">Round {index + 1}</span>
+              <span className="breakdown-value">{time.toFixed(3)}초</span>
             </div>
           ))}
         </div>
         
-        <p className="result-stats">
-          🏁 최고: {bestTime.toFixed(3)}s  평균: {avgTime.toFixed(3)}s
-        </p>
         <button className="restart-button" onClick={restartGame}>
           🔄 다시 도전하기
         </button>
