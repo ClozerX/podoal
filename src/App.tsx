@@ -324,7 +324,7 @@ function ResultView({
       <ConfettiAnimation />
       <div className="result-card">
         <h1 className="result-title">🎉 축하합니다!</h1>
-        <p className="result-subtitle">모든 라운드를 완료했습니다.</p>
+        <p className="result-subtitle">티켓 예메에 성공했습니다!</p>
         
         <div className="round-times">
           <h3 className="round-times-title">⏱️ 라운드별 기록</h3>
