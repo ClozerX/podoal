@@ -366,26 +366,27 @@
 }
 
 .game-title {
-  font-size: 1.3rem;
+  font-size: 1.6rem;
   font-weight: 800;
   color: #333;
-  margin-bottom: 6px;
+  margin-bottom: 8px;
   text-align: center;
   line-height: 1.1;
   flex-shrink: 0;
 }
 
 .result-text {
-  font-size: 0.95rem;
+  font-size: 1.3rem;
   font-weight: 600;
   color: #9333EA;
-  margin-bottom: 4px;
+  margin-bottom: 6px;
   text-align: center;
   flex-shrink: 0;
 }
 
 .round-text {
-  font-size: 0.9rem;
+  font-size: 1.1rem;
+  font-weight: 500;
   color: #666;
   margin-bottom: 10px;
   text-align: center;
@@ -402,7 +403,6 @@
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
   width: fit-content;
   max-width: calc(100% - 20px);
-  max-height: 60vh;
   overflow: visible;
   align-items: center;
   justify-content: center;
@@ -478,24 +478,23 @@
     gap: 1.5px;
     padding: 8px;
     max-width: calc(100% - 16px);
-    max-height: 55vh;
     overflow: visible;
   }
   
   .game-title {
-    font-size: 0.95rem;
-    margin-bottom: 3px;
+    font-size: 1.4rem;
+    margin-bottom: 6px;
     flex-shrink: 0;
   }
   
   .result-text {
-    font-size: 0.8rem;
-    margin-bottom: 2px;
+    font-size: 1.2rem;
+    margin-bottom: 5px;
     flex-shrink: 0;
   }
   
   .round-text {
-    font-size: 0.75rem;
+    font-size: 1rem;
     margin-bottom: 6px;
     flex-shrink: 0;
   }
