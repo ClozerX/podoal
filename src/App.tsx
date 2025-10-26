@@ -329,6 +329,10 @@ function App() {
   }
   
   const goToChat = () => {
+    if (!nickname) {
+      alert('채팅을 이용하려면 먼저 게임을 완료하고 닉네임을 설정해주세요!')
+      return
+    }
     setPhase('chat')
   }
   
@@ -382,7 +386,7 @@ function App() {
     }
   }, [nickname])
   
-  // 채팅 메시지 로드
+  // 채팅 메시지 로드 및 실시간 구독
   useEffect(() => {
     if (phase !== 'chat' || !isSupabaseConfigured()) return
     
@@ -403,18 +407,35 @@ function App() {
     
     loadMessages()
     
-    // 실시간 채팅 구독
+    // 실시간 채팅 구독 (개선된 방식)
     const channel = supabase
-      .channel('chat_messages')
-      .on('postgres_changes', 
-        { event: 'INSERT', schema: 'public', table: 'chat_messages' },
+      .channel('realtime:chat_messages')
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'chat_messages'
+        },
         (payload) => {
-          setChatMessages(prev => [...prev, payload.new])
+          console.log('New message received:', payload.new)
+          setChatMessages(prev => {
+            // 중복 방지
+            const exists = prev.find(msg => msg.id === payload.new.id)
+            if (exists) return prev
+            return [...prev, payload.new]
+          })
         }
       )
-      .subscribe()
+      .subscribe((status) => {
+        console.log('Realtime subscription status:', status)
+        if (status === 'SUBSCRIBED') {
+          console.log('Successfully subscribed to chat messages')
+        }
+      })
     
     return () => {
+      console.log('Unsubscribing from chat channel')
       supabase.removeChannel(channel)
     }
   }, [phase])
@@ -425,11 +446,22 @@ function App() {
     
     setIsSendingMessage(true)
     try {
-      const { error } = await supabase
+      const newMessage = {
+        nickname: nickname,
+        message: chatInput.trim(),
+        created_at: new Date().toISOString()
+      }
+      
+      console.log('Sending message:', newMessage)
+      
+      const { data, error } = await supabase
         .from('chat_messages')
-        .insert([{ nickname, message: chatInput.trim() }])
+        .insert([newMessage])
+        .select()
       
       if (error) throw error
+      
+      console.log('Message sent successfully:', data)
       setChatInput('')
     } catch (error) {
       console.error('Error sending message:', error)
@@ -1097,23 +1129,35 @@ function ChatView({
               <p className="chat-empty-subtitle">첫 메시지를 남겨보세요!</p>
             </div>
           ) : (
-            messages.map((msg, index) => (
-              <div 
-                key={msg.id || index} 
-                className={`chat-message ${msg.nickname === nickname ? 'own-message' : ''}`}
-              >
-                <div className="message-nickname">{msg.nickname}</div>
-                <div className="message-bubble">
-                  <div className="message-text">{msg.message}</div>
-                  <div className="message-time">
-                    {new Date(msg.created_at).toLocaleTimeString('ko-KR', { 
-                      hour: '2-digit', 
-                      minute: '2-digit' 
-                    })}
+            messages.map((msg, index) => {
+              const isOwnMessage = msg.nickname === nickname
+              const messageTime = msg.created_at 
+                ? new Date(msg.created_at).toLocaleTimeString('ko-KR', { 
+                    hour: '2-digit', 
+                    minute: '2-digit' 
+                  })
+                : ''
+              
+              return (
+                <div 
+                  key={msg.id || index} 
+                  className={`chat-message ${isOwnMessage ? 'own-message' : ''}`}
+                >
+                  {!isOwnMessage && (
+                    <div className="message-nickname">{msg.nickname || '익명'}</div>
+                  )}
+                  <div className="message-bubble">
+                    <div className="message-text">{msg.message}</div>
+                    {messageTime && (
+                      <div className="message-time">{messageTime}</div>
+                    )}
                   </div>
+                  {isOwnMessage && (
+                    <div className="message-nickname own-nickname">{msg.nickname}</div>
+                  )}
                 </div>
-              </div>
-            ))
+              )
+            })
           )}
           <div ref={messagesEndRef} />
         </div>

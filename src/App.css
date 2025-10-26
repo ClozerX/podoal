@@ -1307,8 +1307,11 @@ body {
   padding: 0 8px;
 }
 
-.chat-message.own-message .message-nickname {
+.chat-message.own-message .message-nickname.own-nickname {
   color: #9333EA;
+  margin-top: 4px;
+  margin-bottom: 0;
+  text-align: right;
 }
 
 .message-bubble {
