@@ -24,7 +24,6 @@ function App() {
   const totalRounds = 5
   const [isRunning, setIsRunning] = useState(false)
   const [seats, setSeats] = useState<(Seat | null)[][]>([])
-  const [startTime, setStartTime] = useState<Date | null>(null)
   const [reactionTimes, setReactionTimes] = useState<number[]>([])
   const [resultText, setResultText] = useState('대기중...')
   const [openSeats, setOpenSeats] = useState<string[]>([])
@@ -36,6 +35,7 @@ function App() {
   const [totalStartTime, setTotalStartTime] = useState<Date | null>(null)
   const [totalTime, setTotalTime] = useState<number>(0)
   const [currentTime, setCurrentTime] = useState<number>(0)
+  const [roundStartTime, setRoundStartTime] = useState<number>(0)
   
   const [bestTime, setBestTime] = useState<number>(() => {
     const saved = localStorage.getItem('bestTime')
@@ -103,9 +103,12 @@ function App() {
   // 보안문자 검증
   const verifyCaptcha = () => {
     if (captchaInput.toUpperCase() === captchaCode) {
-      if (captchaStartTime) {
+      if (captchaStartTime && totalStartTime) {
         const timeTaken = (Date.now() - captchaStartTime.getTime()) / 1000
         setCaptchaTime(timeTaken)
+        // 게임 시작 시점의 currentTime 저장
+        const gameStartTime = (Date.now() - totalStartTime.getTime()) / 1000
+        setRoundStartTime(gameStartTime)
       }
       setPhase('playing')
       startGame()
@@ -159,6 +162,12 @@ function App() {
     setSelectedSeats(new Set())
     setOpenSeats([])
     
+    // 라운드 시작 시간 기록 (타이머 기준)
+    if (totalStartTime) {
+      const currentElapsed = (Date.now() - totalStartTime.getTime()) / 1000
+      setRoundStartTime(currentElapsed)
+    }
+    
     setTimeout(() => {
       openRandomSeats(newSeats)
     }, 1000)
@@ -179,7 +188,6 @@ function App() {
       })
     )
     setSeats(updatedSeats)
-    setStartTime(new Date())
     setResultText('GO! (2좌석 클릭)')
   }
 
@@ -198,12 +206,13 @@ function App() {
     if (newSelected.size === 1) {
       setResultText('1/2 선택됨')
     } else if (newSelected.size === 2) {
-      // 라운드 완료 시간 계산
-      if (startTime) {
-        const completionTime = (Date.now() - startTime.getTime()) / 1000
-        const newReactionTimes = [...reactionTimes, completionTime]
+      // 라운드 완료 시간 계산 (타이머 기준)
+      if (totalStartTime) {
+        const currentElapsed = (Date.now() - totalStartTime.getTime()) / 1000
+        const roundTime = currentElapsed - roundStartTime
+        const newReactionTimes = [...reactionTimes, roundTime]
         setReactionTimes(newReactionTimes)
-        setResultText(`Round ${round} 완료: ${completionTime.toFixed(3)}초`)
+        setResultText(`Round ${round} 완료: ${roundTime.toFixed(3)}초`)
         
         setTimeout(() => {
           if (round < totalRounds) {
@@ -251,6 +260,7 @@ function App() {
     setTotalStartTime(null)
     setTotalTime(0)
     setCurrentTime(0)
+    setRoundStartTime(0)
     setQueueNumber(Math.floor(Math.random() * 6000) + 3000)
     setPhase('waitingQueue')
   }
@@ -469,6 +479,9 @@ function ResultView({
     return mins > 0 ? `${mins}분 ${secs}초` : `${secs}초`
   }
 
+  // 세부 시간 합계
+  const detailSum = captchaTime + reactionTimes.reduce((a, b) => a + b, 0)
+
   return (
     <div className="result-view">
       <ConfettiAnimation />
@@ -494,6 +507,10 @@ function ResultView({
               <span className="breakdown-value">{time.toFixed(3)}초</span>
             </div>
           ))}
+          <div className="breakdown-item breakdown-total">
+            <span className="breakdown-label">합계</span>
+            <span className="breakdown-value">{detailSum.toFixed(3)}초</span>
+          </div>
         </div>
         
         <button className="restart-button" onClick={restartGame}>

@@ -581,6 +581,23 @@ body {
   font-family: 'Courier New', monospace;
 }
 
+.breakdown-total {
+  margin-top: 10px;
+  padding-top: 15px;
+  border-top: 2px solid rgba(255, 255, 255, 0.3);
+  background: rgba(255, 255, 255, 0.15) !important;
+}
+
+.breakdown-total .breakdown-label {
+  font-weight: 800;
+  font-size: 1.05rem;
+}
+
+.breakdown-total .breakdown-value {
+  font-size: 1.15rem;
+  color: #FCD34D;
+}
+
 .restart-button {
   background: rgba(255, 255, 255, 0.9);
   color: #9333EA;
