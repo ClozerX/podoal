@@ -134,11 +134,11 @@ function App() {
 
   const seatGrid = (round: number): [number, number] => {
     switch (round) {
-      case 1: return [12, 18]
-      case 2: return [14, 22]
-      case 3: return [16, 26]
-      case 4: return [18, 30]
-      default: return [20, 34]
+      case 1: return [10, 16]
+      case 2: return [12, 20]
+      case 3: return [14, 24]
+      case 4: return [16, 28]
+      default: return [18, 32]
     }
   }
 
