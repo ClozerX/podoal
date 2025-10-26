@@ -166,14 +166,17 @@ body {
   background: white;
   border-radius: 12px;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
-  max-width: 100%;
+  max-width: 95vw;
+  max-height: 60vh;
   overflow: auto;
 }
 
 .seat-row {
   display: flex;
   gap: 2px;
-  justify-content: center;
+  justify-content: flex-start;
+  flex-wrap: nowrap;
+  min-width: min-content;
 }
 
 .seat-wrapper {
@@ -181,12 +184,13 @@ body {
 }
 
 .seat {
-  width: 28px;
-  height: 28px;
+  width: 22px;
+  height: 22px;
   border-radius: 3px;
   border: none;
   cursor: pointer;
   transition: all 0.2s ease;
+  flex-shrink: 0;
 }
 
 .seat.active {
@@ -208,12 +212,31 @@ body {
 
 @media (max-width: 768px) {
   .seat {
-    width: 20px;
-    height: 20px;
+    width: 16px;
+    height: 16px;
   }
   
   .game-title {
     font-size: 1.3rem;
+  }
+  
+  .seats-container {
+    max-width: 98vw;
+    padding: 8px;
+  }
+}
+
+@media (min-width: 769px) and (max-width: 1200px) {
+  .seat {
+    width: 18px;
+    height: 18px;
+  }
+}
+
+@media (min-width: 1201px) {
+  .seat {
+    width: 20px;
+    height: 20px;
   }
 }
 
