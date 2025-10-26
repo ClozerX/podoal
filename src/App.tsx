@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import './App.css'
-import { supabase, RankingRecord } from './supabaseClient'
+import { supabase, RankingRecord, isSupabaseConfigured } from './supabaseClient'
 
 type GamePhase = 'waitingQueue' | 'captcha' | 'playing' | 'finished' | 'leaderboard'
 
@@ -261,6 +261,11 @@ function App() {
   const saveRanking = async (playerNickname: string) => {
     if (!playerNickname.trim()) {
       alert('닉네임을 입력해주세요!')
+      return
+    }
+
+    if (!isSupabaseConfigured()) {
+      alert('⚠️ 데이터베이스 연결이 설정되지 않았습니다.\n관리자에게 문의해주세요.')
       return
     }
 
@@ -559,6 +564,12 @@ function ResultView({
   const calculateRank = async () => {
     setLoadingRank(true)
     try {
+      if (!isSupabaseConfigured()) {
+        setRankPercentile(null)
+        setLoadingRank(false)
+        return
+      }
+
       // 전체 랭킹 데이터 조회
       const { data, error } = await supabase
         .from('rankings')
@@ -771,6 +782,12 @@ function LeaderboardView({ onBack }: { onBack: () => void }) {
   const loadRankings = async () => {
     setLoading(true)
     try {
+      if (!isSupabaseConfigured()) {
+        setRankings([])
+        setLoading(false)
+        return
+      }
+
       let query = supabase
         .from('rankings')
         .select('*')
