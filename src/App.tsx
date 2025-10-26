@@ -518,6 +518,7 @@ function App() {
           isSavingRank={isSavingRank}
           restartGame={restartGame}
           goToLeaderboard={goToLeaderboard}
+          goToChat={goToChat}
         />
       )}
       
@@ -717,7 +718,8 @@ function ResultView({
   saveRanking,
   isSavingRank,
   restartGame,
-  goToLeaderboard
+  goToLeaderboard,
+  goToChat
 }: {
   totalTime: number
   captchaTime: number
@@ -729,10 +731,12 @@ function ResultView({
   isSavingRank: boolean
   restartGame: () => void
   goToLeaderboard: () => void
+  goToChat: () => void
 }) {
   const [tempNickname, setTempNickname] = useState(nickname)
   const [rankPercentile, setRankPercentile] = useState<number | null>(null)
   const [loadingRank, setLoadingRank] = useState(true)
+  const [isBreakdownCollapsed, setIsBreakdownCollapsed] = useState(true)
 
   useEffect(() => {
     calculateRank()
@@ -833,22 +837,35 @@ function ResultView({
           </div>
         </div>
         
-        <div className="time-breakdown">
-          <h3 className="breakdown-title">📊 세부 기록</h3>
-          <div className="breakdown-item">
-            <span className="breakdown-label">🔒 보안문자</span>
-            <span className="breakdown-value">{captchaTime.toFixed(3)}초</span>
+        <div className={`time-breakdown ${isBreakdownCollapsed ? 'collapsed' : ''}`}>
+          <div 
+            className="breakdown-toggle" 
+            onClick={() => setIsBreakdownCollapsed(!isBreakdownCollapsed)}
+          >
+            <h3 className="breakdown-title">📊 세부 기록</h3>
+            <span className="breakdown-toggle-icon">
+              {isBreakdownCollapsed ? '▼' : '▲'}
+            </span>
           </div>
-          {reactionTimes.map((time, index) => (
-            <div key={index} className="breakdown-item">
-              <span className="breakdown-label">Round {index + 1}</span>
-              <span className="breakdown-value">{time.toFixed(3)}초</span>
+          
+          {!isBreakdownCollapsed && (
+            <div className="breakdown-content">
+              <div className="breakdown-item">
+                <span className="breakdown-label">🔒 보안문자</span>
+                <span className="breakdown-value">{captchaTime.toFixed(3)}초</span>
+              </div>
+              {reactionTimes.map((time, index) => (
+                <div key={index} className="breakdown-item">
+                  <span className="breakdown-label">Round {index + 1}</span>
+                  <span className="breakdown-value">{time.toFixed(3)}초</span>
+                </div>
+              ))}
+              <div className="breakdown-item breakdown-total">
+                <span className="breakdown-label">합계</span>
+                <span className="breakdown-value">{detailSum.toFixed(3)}초</span>
+              </div>
             </div>
-          ))}
-          <div className="breakdown-item breakdown-total">
-            <span className="breakdown-label">합계</span>
-            <span className="breakdown-value">{detailSum.toFixed(3)}초</span>
-          </div>
+          )}
         </div>
 
         {showNicknameInput ? (
@@ -879,6 +896,9 @@ function ResultView({
         <div className="result-buttons">
           <button className="leaderboard-button" onClick={goToLeaderboard}>
             📊 랭킹 보기
+          </button>
+          <button className="chat-button" onClick={goToChat}>
+            💬 채팅방
           </button>
           <button className="restart-button" onClick={restartGame}>
             🔄 다시 도전

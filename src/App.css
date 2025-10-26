@@ -483,90 +483,106 @@ body {
   }
   
   /* 결과 페이지 모바일 최적화 */
+  .result-view {
+    padding: 5px;
+  }
+  
   .result-card {
-    padding: 20px 15px;
-    border-radius: 20px;
-    width: 95%;
-    max-height: 85vh;
+    padding: 15px 12px;
+    border-radius: 15px;
+    width: 98%;
+    max-height: 98vh;
   }
   
   .result-title {
-    font-size: 1.3rem;
-    margin-bottom: 12px;
+    font-size: 1.2rem;
+    margin-bottom: 8px;
   }
   
   .total-time-display {
-    padding: 12px;
-    margin: 10px 0;
-    border-radius: 15px;
+    padding: 10px;
+    margin: 8px 0;
+    border-radius: 12px;
     border-width: 2px;
   }
   
   .total-time-label {
+    font-size: 0.85rem;
+    margin-bottom: 4px;
+  }
+  
+  .total-time-value {
+    font-size: 1.8rem;
+    margin-bottom: 3px;
+  }
+  
+  .total-time-seconds {
+    font-size: 0.8rem;
+  }
+  
+  .rank-percentile {
+    font-size: 0.85rem;
+    padding: 6px 10px;
+    margin-top: 6px;
+  }
+  
+  .time-breakdown {
+    margin: 8px auto;
+    padding: 8px;
+    max-height: 150px;
+  }
+  
+  .time-breakdown.collapsed {
+    max-height: 45px;
+  }
+  
+  .breakdown-title {
     font-size: 0.9rem;
     margin-bottom: 6px;
   }
   
-  .total-time-value {
-    font-size: 2rem;
-    margin-bottom: 4px;
-  }
-  
-  .total-time-seconds {
-    font-size: 0.85rem;
-  }
-  
-  .rank-percentile {
-    font-size: 0.9rem;
-    padding: 8px 12px;
-    margin-top: 8px;
-  }
-  
-  .time-breakdown {
-    margin: 10px auto;
-    padding: 10px;
-    max-height: 150px;
-  }
-  
-  .breakdown-title {
-    font-size: 0.95rem;
-    margin-bottom: 8px;
-  }
-  
-  .breakdown-item {
-    font-size: 0.85rem;
+  .breakdown-toggle {
     padding: 6px 0;
   }
   
+  .breakdown-item {
+    font-size: 0.8rem;
+    padding: 5px 0;
+  }
+  
   .breakdown-total {
-    font-size: 0.9rem;
-    padding: 8px 0;
-    margin-top: 6px;
+    font-size: 0.85rem;
+    padding: 6px 0;
+    margin-top: 5px;
   }
   
   .nickname-input-container {
-    margin: 10px 0;
+    margin: 8px 0;
   }
   
   .nickname-input {
-    padding: 8px;
-    font-size: 0.9rem;
+    padding: 7px;
+    font-size: 0.85rem;
   }
   
   .save-rank-button {
-    padding: 10px;
-    font-size: 0.9rem;
+    padding: 8px;
+    font-size: 0.85rem;
   }
   
   .result-buttons {
-    gap: 8px;
-    margin-top: 10px;
+    gap: 6px;
+    margin-top: 8px;
+    flex-wrap: wrap;
   }
   
   .leaderboard-button,
+  .chat-button,
   .restart-button {
-    padding: 10px;
-    font-size: 0.85rem;
+    padding: 8px 12px;
+    font-size: 0.8rem;
+    flex: 1 1 calc(50% - 3px);
+    min-width: 120px;
   }
 }
 
@@ -645,7 +661,7 @@ body {
   animation: fadeIn 0.5s ease;
   overflow: auto;
   box-sizing: border-box;
-  padding: 20px;
+  padding: 10px;
 }
 
 .confetti-canvas {
@@ -661,13 +677,13 @@ body {
 .result-card {
   background: rgba(255, 255, 255, 0.15);
   backdrop-filter: blur(20px);
-  border-radius: 30px;
-  padding: 40px 30px;
+  border-radius: 20px;
+  padding: 25px 20px;
   text-align: center;
   color: white;
   max-width: 500px;
-  width: 90%;
-  max-height: 90vh;
+  width: 95%;
+  max-height: 95vh;
   overflow-y: auto;
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
   z-index: 2;
@@ -695,11 +711,11 @@ body {
 /* 총 소요 시간 표시 */
 .total-time-display {
   text-align: center;
-  padding: 20px;
-  margin: 15px 0;
+  padding: 15px;
+  margin: 10px 0;
   background: linear-gradient(135deg, rgba(147, 51, 234, 0.2), rgba(236, 72, 153, 0.2));
-  border-radius: 20px;
-  border: 3px solid rgba(255, 255, 255, 0.3);
+  border-radius: 15px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
 }
 
 .total-time-label {
@@ -751,12 +767,40 @@ body {
 .time-breakdown {
   width: 100%;
   max-width: 400px;
-  margin: 15px auto;
-  padding: 12px;
+  margin: 10px auto;
+  padding: 10px;
   background: rgba(255, 255, 255, 0.08);
   border-radius: 12px;
   max-height: 200px;
-  overflow-y: auto;
+  overflow: hidden;
+  transition: max-height 0.3s ease;
+}
+
+.time-breakdown.collapsed {
+  max-height: 50px;
+  overflow: hidden;
+}
+
+.breakdown-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  cursor: pointer;
+  padding: 8px 0;
+  user-select: none;
+}
+
+.breakdown-toggle-icon {
+  font-size: 1.2rem;
+  transition: transform 0.3s ease;
+}
+
+.time-breakdown.collapsed .breakdown-toggle-icon {
+  transform: rotate(-90deg);
+}
+
+.breakdown-content {
+  margin-top: 8px;
 }
 
 .breakdown-title {
@@ -885,9 +929,11 @@ body {
   display: flex;
   gap: 10px;
   margin-top: 15px;
+  flex-wrap: wrap;
 }
 
-.leaderboard-button {
+.leaderboard-button,
+.chat-button {
   flex: 1;
   padding: 14px;
   font-size: 1rem;
