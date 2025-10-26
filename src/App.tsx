@@ -123,12 +123,13 @@ function App() {
   }
 
   const seatGrid = (round: number): [number, number] => {
+    // [행(세로), 열(가로)] - 모바일 최적화: 가로 줄이고 세로 늘림
     switch (round) {
-      case 1: return [10, 16]
-      case 2: return [16, 28]  // 난이도 증가
-      case 3: return [20, 36]  // 난이도 증가
-      case 4: return [24, 44]  // 난이도 증가
-      default: return [28, 52] // 난이도 증가
+      case 1: return [12, 12]  // 144개
+      case 2: return [22, 16]  // 352개
+      case 3: return [30, 20]  // 600개
+      case 4: return [40, 24]  // 960개
+      default: return [50, 28] // 1400개
     }
   }
 
