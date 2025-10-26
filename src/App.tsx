@@ -337,7 +337,13 @@ function App() {
   }
   
   const goBackFromChat = () => {
-    setPhase('waitingQueue')
+    // 채팅방에 들어오기 전 상태로 돌아가기
+    // 게임 완료 후 채팅에 들어왔다면 결과 페이지로
+    if (totalTime > 0) {
+      setPhase('finished')
+    } else {
+      setPhase('waitingQueue')
+    }
   }
   
   // 접속자 수 업데이트
