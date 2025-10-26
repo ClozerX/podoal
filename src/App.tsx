@@ -696,6 +696,7 @@ function ResultView({
 }) {
   const [tempNickname, setTempNickname] = useState(nickname)
   const [rankPercentile, setRankPercentile] = useState<number | null>(null)
+  const [dailyRank, setDailyRank] = useState<number | null>(null)
   const [loadingRank, setLoadingRank] = useState(true)
   const [isBreakdownCollapsed, setIsBreakdownCollapsed] = useState(true)
 
@@ -708,33 +709,57 @@ function ResultView({
     try {
       if (!isSupabaseConfigured()) {
         setRankPercentile(null)
+        setDailyRank(null)
         setLoadingRank(false)
         return
       }
 
       // 전체 랭킹 데이터 조회
-      const { data, error } = await supabase
+      const { data: allData, error: allError } = await supabase
         .from('rankings')
         .select('total_time')
         .order('total_time', { ascending: true })
 
-      if (error) throw error
+      if (allError) throw allError
 
-      if (!data || data.length === 0) {
+      // 오늘 날짜 (한국 시간 기준)
+      const today = new Date()
+      const koreanDate = new Date(today.getTime() + (9 * 60 * 60 * 1000))
+      const todayStr = koreanDate.toISOString().split('T')[0]
+
+      // 오늘 랭킹 데이터 조회
+      const { data: todayData, error: todayError } = await supabase
+        .from('rankings')
+        .select('total_time')
+        .gte('created_at', `${todayStr}T00:00:00`)
+        .order('total_time', { ascending: true })
+
+      if (todayError) throw todayError
+
+      if (!allData || allData.length === 0) {
         setRankPercentile(null)
+        setDailyRank(null)
         setLoadingRank(false)
         return
       }
 
-      // 현재 시간보다 빠른 사람 수 계산
-      const fasterCount = data.filter(rank => rank.total_time < totalTime).length
-      const totalCount = data.length + 1 // 현재 사용자 포함
+      // 전체 퍼센타일 계산
+      const fasterCount = allData.filter(rank => rank.total_time < totalTime).length
+      const totalCount = allData.length + 1
       const percentile = ((fasterCount + 1) / totalCount) * 100
-
       setRankPercentile(percentile)
+
+      // 오늘 순위 계산
+      if (todayData && todayData.length > 0) {
+        const todayFasterCount = todayData.filter(rank => rank.total_time < totalTime).length
+        setDailyRank(todayFasterCount + 1)
+      } else {
+        setDailyRank(1) // 오늘 첫 기록
+      }
     } catch (error) {
       console.error('Error calculating rank:', error)
       setRankPercentile(null)
+      setDailyRank(null)
     } finally {
       setLoadingRank(false)
     }
@@ -750,12 +775,14 @@ function ResultView({
     if (loadingRank) return '순위 계산중...'
     if (rankPercentile === null) return '첫 번째 도전자!'
     
-    if (rankPercentile <= 1) return '🏆 TOP 1% 전설의 손가락!'
-    if (rankPercentile <= 5) return '🥇 상위 5% 티켓팅 고수!'
-    if (rankPercentile <= 10) return '🥈 상위 10% 빠른 손가락!'
-    if (rankPercentile <= 25) return '🥉 상위 25% 우수한 실력!'
-    if (rankPercentile <= 50) return '📈 상위 50% 평균 이상!'
-    return `📊 상위 ${rankPercentile.toFixed(1)}%`
+    const dailyRankText = dailyRank ? `오늘 ${dailyRank}위` : ''
+    
+    if (rankPercentile <= 1) return `🏆 TOP 1% 전설의 손가락!\n${dailyRankText}`
+    if (rankPercentile <= 5) return `🥇 상위 5% 티켓팅 고수!\n${dailyRankText}`
+    if (rankPercentile <= 10) return `🥈 상위 10% 빠른 손가락!\n${dailyRankText}`
+    if (rankPercentile <= 25) return `🥉 상위 25% 우수한 실력!\n${dailyRankText}`
+    if (rankPercentile <= 50) return `📈 상위 50% 평균 이상!\n${dailyRankText}`
+    return `📊 상위 ${rankPercentile.toFixed(1)}%\n${dailyRankText}`
   }
 
   const getRankColor = () => {
@@ -820,7 +847,6 @@ function ResultView({
         <p className="result-subtitle">{getResultSubtitle()}</p>
         
         <div className="total-time-display">
-          <div className="total-time-label">⏱️ 총 소요 시간</div>
           <div className="total-time-value">{formatTime(totalTime)}</div>
           <div 
             className="rank-percentile" 
@@ -861,15 +887,6 @@ function ResultView({
           )}
         </div>
 
-        <div className="auto-save-notice">
-          ✅ 기록이 자동으로 저장되었습니다!
-          {nickname ? (
-            <div className="current-nickname">닉네임: <strong>{nickname}</strong></div>
-          ) : (
-            <div className="current-nickname">닉네임: <strong>익명</strong></div>
-          )}
-        </div>
-        
         <div className="nickname-change-container">
           <input
             type="text"
