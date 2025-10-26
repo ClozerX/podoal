@@ -35,7 +35,6 @@ function App() {
   const [captchaTime, setCaptchaTime] = useState<number>(0)
   const [totalStartTime, setTotalStartTime] = useState<Date | null>(null)
   const [totalTime, setTotalTime] = useState<number>(0)
-  const [currentTime, setCurrentTime] = useState<number>(0)
   const [roundStartTime, setRoundStartTime] = useState<number>(0)
   const [nickname, setNickname] = useState<string>(() => {
     return localStorage.getItem('podoal_nickname') || ''
@@ -87,17 +86,10 @@ function App() {
     return () => clearInterval(interval)
   }, [phase])
 
-  // ✅ Timer update logic
+  // 스크롤 위치 초기화
   useEffect(() => {
-    if ((phase === 'captcha' || phase === 'playing') && totalStartTime) {
-      const interval = setInterval(() => {
-        const elapsed = (Date.now() - totalStartTime.getTime()) / 1000
-        setCurrentTime(elapsed)
-      }, 10) // 10ms 단위로 업데이트
-      
-      return () => clearInterval(interval)
-    }
-  }, [phase, totalStartTime])
+    window.scrollTo(0, 0)
+  }, [phase])
 
   // 보안문자 생성
   const generateCaptcha = () => {
@@ -133,10 +125,10 @@ function App() {
   const seatGrid = (round: number): [number, number] => {
     switch (round) {
       case 1: return [10, 16]
-      case 2: return [12, 20]
-      case 3: return [14, 24]
-      case 4: return [16, 28]
-      default: return [18, 32]
+      case 2: return [16, 28]  // 난이도 증가
+      case 3: return [20, 36]  // 난이도 증가
+      case 4: return [24, 44]  // 난이도 증가
+      default: return [28, 52] // 난이도 증가
     }
   }
 
@@ -318,7 +310,6 @@ function App() {
     setCaptchaInput('')
     setTotalStartTime(null)
     setTotalTime(0)
-    setCurrentTime(0)
     setRoundStartTime(0)
     setQueueNumber(Math.floor(Math.random() * 6000) + 3000)
     setPhase('waitingQueue')
@@ -487,29 +478,23 @@ function App() {
       )}
       
       {phase === 'captcha' && (
-        <>
-          <Timer currentTime={currentTime} />
-          <CaptchaView
-            captchaCode={captchaCode}
-            captchaInput={captchaInput}
-            setCaptchaInput={setCaptchaInput}
-            verifyCaptcha={verifyCaptcha}
-            generateCaptcha={generateCaptcha}
-          />
-        </>
+        <CaptchaView
+          captchaCode={captchaCode}
+          captchaInput={captchaInput}
+          setCaptchaInput={setCaptchaInput}
+          verifyCaptcha={verifyCaptcha}
+          generateCaptcha={generateCaptcha}
+        />
       )}
       
       {phase === 'playing' && (
-        <>
-          <Timer currentTime={currentTime} />
-          <GameView
-            round={round}
-            totalRounds={totalRounds}
-            resultText={resultText}
-            seats={seats}
-            handleTap={handleTap}
-          />
-        </>
+        <GameView
+          round={round}
+          totalRounds={totalRounds}
+          resultText={resultText}
+          seats={seats}
+          handleTap={handleTap}
+        />
       )}
       
       {phase === 'finished' && (
@@ -548,23 +533,6 @@ function App() {
           <span className="online-count">{onlineUsers}</span>
         </button>
       )}
-    </div>
-  )
-}
-
-// ⏱️ 타이머 컴포넌트
-function Timer({ currentTime }: { currentTime: number }) {
-  const formatTime = (seconds: number) => {
-    const mins = Math.floor(seconds / 60)
-    const secs = Math.floor(seconds % 60)
-    const ms = Math.floor((seconds % 1) * 100)
-    return `${mins}:${secs.toString().padStart(2, '0')}.${ms.toString().padStart(2, '0')}`
-  }
-
-  return (
-    <div className="timer-display">
-      <div className="timer-icon">⏱️</div>
-      <div className="timer-value">{formatTime(currentTime)}</div>
     </div>
   )
 }
@@ -803,12 +771,57 @@ function ResultView({
 
   const detailSum = captchaTime + reactionTimes.reduce((a, b) => a + b, 0)
 
+  // 독려 메시지 랜덤 생성 함수
+  const getEncouragementMessage = () => {
+    const messages = [
+      '조금만 더 연습하면 성공할 수 있어요! 💪',
+      '포기하지 마세요! 다시 도전해보세요! 🔥',
+      '연습이 완벽을 만듭니다! 🎯',
+      '거의 다 왔어요! 한 번 더! 🚀',
+      '실력이 점점 늘고 있어요! 화이팅! ⭐',
+      '좌절하지 마세요, 계속 연습하세요! 💫',
+      '다음엔 더 잘할 수 있어요! 🌟',
+      '포도알이 당신을 응원합니다! 🍇',
+      '손가락 속도를 높여보세요! ⚡',
+      '집중력을 발휘해보세요! 🎪',
+      '반복이 실력을 만듭니다! 📈',
+      '당신은 할 수 있어요! 🏃',
+      '속도를 올려보세요! 🏎️',
+      '실력 향상의 기회! 다시 도전! 🎮',
+      '티켓팅 고수가 되는 그날까지! 🏆',
+      '조금씩 발전하고 있어요! 📊',
+      '멈추지 마세요! 계속 가세요! 🛤️',
+      '성공은 바로 다음 도전에 있어요! 🎪',
+      '더 빠르게, 더 정확하게! 🎯',
+      '연습은 거짓말하지 않아요! 💎'
+    ]
+    return messages[Math.floor(Math.random() * messages.length)]
+  }
+
+  // 타이틀과 서브타이틀 결정
+  const getResultTitle = () => {
+    if (rankPercentile === null || rankPercentile <= 10) {
+      return '🎉 예매 성공!'
+    }
+    return '💪 더 연습하세요!'
+  }
+
+  const getResultSubtitle = () => {
+    if (rankPercentile === null || rankPercentile <= 10) {
+      return '티켓팅에 성공했습니다!'
+    }
+    return getEncouragementMessage()
+  }
+
+  // 컨페티 표시 여부
+  const shouldShowConfetti = rankPercentile === null || rankPercentile <= 10
+
   return (
     <div className="result-view">
-      <ConfettiAnimation />
+      {shouldShowConfetti && <ConfettiAnimation />}
       <div className="result-card">
-        <h1 className="result-title">🎉 예매 성공!</h1>
-        <p className="result-subtitle">티켓팅에 성공했습니다!</p>
+        <h1 className="result-title">{getResultTitle()}</h1>
+        <p className="result-subtitle">{getResultSubtitle()}</p>
         
         <div className="total-time-display">
           <div className="total-time-label">⏱️ 총 소요 시간</div>
