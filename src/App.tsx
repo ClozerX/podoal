@@ -56,7 +56,10 @@ function App() {
         } else {
           next = 0
           clearInterval(interval)
-          setTimeout(() => setPhase('countdown'), 200)
+          setTimeout(() => {
+            setPhase('playing')
+            startGame()
+          }, 200)
         }
         return Math.max(0, next)
       })
@@ -65,28 +68,28 @@ function App() {
     return () => clearInterval(interval)
   }, [phase])
 
-  // ✅ Countdown logic
-  useEffect(() => {
-    if (phase !== 'countdown') return
-    
-    setTimerCount(3)
-    const interval = setInterval(() => {
-      setTimerCount(prev => {
-        if (prev > 0) {
-          return prev - 1
-        } else {
-          clearInterval(interval)
-          setTimeout(() => {
-            setPhase('playing')
-            startGame()
-          }, 500)
-          return 0
-        }
-      })
-    }, 1000)
-    
-    return () => clearInterval(interval)
-  }, [phase])
+  // ✅ Countdown logic (disabled - skipping countdown)
+  // useEffect(() => {
+  //   if (phase !== 'countdown') return
+  //   
+  //   setTimerCount(3)
+  //   const interval = setInterval(() => {
+  //     setTimerCount(prev => {
+  //       if (prev > 0) {
+  //         return prev - 1
+  //       } else {
+  //         clearInterval(interval)
+  //         setTimeout(() => {
+  //           setPhase('playing')
+  //           startGame()
+  //         }, 500)
+  //         return 0
+  //       }
+  //     })
+  //   }, 1000)
+  //   
+  //   return () => clearInterval(interval)
+  // }, [phase])
 
   const seatGrid = (round: number): [number, number] => {
     switch (round) {
@@ -218,10 +221,6 @@ function App() {
     <div className="app">
       {phase === 'waitingQueue' && (
         <WaitingQueueView queueNumber={queueNumber} />
-      )}
-      
-      {phase === 'countdown' && (
-        <CountdownView timerCount={timerCount} />
       )}
       
       {phase === 'playing' && (
