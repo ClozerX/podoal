@@ -381,10 +381,15 @@ body {
   transform: scale(1.1);
 }
 
-.seat.inactive,
-.seat.empty {
-  background: rgba(156, 163, 175, 0.4);
+.seat.inactive {
+  background: rgba(203, 213, 225, 0.9);
   cursor: not-allowed;
+}
+
+.seat.empty {
+  background: transparent;
+  visibility: hidden;
+  pointer-events: none;
 }
 
 /* 📱 모바일 최적화 - 좌석 크기 자동 조정 */

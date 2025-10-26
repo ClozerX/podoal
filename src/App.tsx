@@ -137,12 +137,18 @@ function App() {
   }
 
   const makeStairPattern = (rows: number, cols: number): (Seat | null)[][] => {
-    const grid: (Seat | null)[][] = Array(rows).fill(null).map(() => Array(cols).fill(null))
+    const grid: (Seat | null)[][] = []
     for (let r = 0; r < rows; r++) {
+      const row: (Seat | null)[] = []
       const limit = Math.min(cols, r + Math.floor(Math.random() * 3) + 3)
-      for (let c = 0; c < limit; c++) {
-        grid[r][c] = { id: `${r}-${c}-${Math.random()}`, isActive: false }
+      for (let c = 0; c < cols; c++) {
+        if (c < limit) {
+          row.push({ id: `${r}-${c}-${Math.random()}`, isActive: false })
+        } else {
+          row.push(null)
+        }
       }
+      grid.push(row)
     }
     return grid
   }
@@ -509,19 +515,18 @@ function GameView({
       <div className="seats-container">
         {seats.map((row, r) => (
           <div key={r} className="seat-row">
-            {row.map((seat, c) => (
-              <div key={c} className="seat-wrapper">
-                {seat ? (
-                  <button
-                    className={`seat ${seat.isActive ? 'active' : 'inactive'}`}
-                    onClick={() => handleTap(seat)}
-                    disabled={!seat.isActive}
-                  />
-                ) : (
-                  <div className="seat empty" />
-                )}
-              </div>
-            ))}
+            {row.map((seat, c) => 
+              seat ? (
+                <button
+                  key={`${r}-${c}`}
+                  className={`seat ${seat.isActive ? 'active' : 'inactive'}`}
+                  onClick={() => handleTap(seat)}
+                  disabled={!seat.isActive}
+                />
+              ) : (
+                <div key={`${r}-${c}`} className="seat empty" />
+              )
+            )}
           </div>
         ))}
       </div>
