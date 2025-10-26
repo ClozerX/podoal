@@ -774,7 +774,7 @@ function ResultView({
       const { data: todayData, error: todayError } = await supabase
         .from('rankings')
         .select('id, total_time')
-        .gte('created_at', `${todayStr}T00:00:00`)
+        .gte('created_at', `${todayStr}T00:00:00+09:00`)
         .order('total_time', { ascending: true })
 
       if (todayError) throw todayError
