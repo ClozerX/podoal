@@ -293,12 +293,53 @@ body {
   opacity: 0.95;
 }
 
+.round-times {
+  width: 100%;
+  max-width: 400px;
+  margin: 20px auto;
+  padding: 15px;
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 12px;
+  max-height: 200px;
+  overflow-y: auto;
+}
+
+.round-times-title {
+  font-size: 1.1rem;
+  font-weight: 700;
+  margin-bottom: 12px;
+  text-align: center;
+}
+
+.round-time-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 12px;
+  margin: 6px 0;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  font-size: 0.95rem;
+}
+
+.round-label {
+  font-weight: 600;
+  opacity: 0.9;
+}
+
+.round-time {
+  font-weight: 700;
+  font-size: 1.05rem;
+  color: #FCD34D;
+}
+
 .result-stats {
   font-size: 1.5rem;
   font-weight: 700;
   margin-bottom: 30px;
+  margin-top: 15px;
   padding: 15px;
-  background: rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.15);
   border-radius: 12px;
 }
 

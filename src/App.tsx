@@ -161,13 +161,6 @@ function App() {
     if (!isRunning || !openSeats.includes(seat.id)) return
     
     const newSelected = new Set(selectedSeats)
-    
-    if (newSelected.size === 0 && startTime) {
-      const rt = (Date.now() - startTime.getTime()) / 1000
-      setReactionTimes(prev => [...prev, rt])
-      setResultText(`첫 클릭 ${rt.toFixed(3)}초`)
-    }
-    
     newSelected.add(seat.id)
     setSelectedSeats(newSelected)
     
@@ -179,16 +172,23 @@ function App() {
     if (newSelected.size === 1) {
       setResultText('1/2 선택됨')
     } else if (newSelected.size === 2) {
-      setResultText('2/2 완료!')
-      setTimeout(() => {
-        if (round < totalRounds) {
-          const nextRoundNum = round + 1
-          setRound(nextRoundNum)
-          nextRound(nextRoundNum, reactionTimes)
-        } else {
-          endGame(reactionTimes)
-        }
-      }, 800)
+      // 라운드 완료 시간 계산
+      if (startTime) {
+        const completionTime = (Date.now() - startTime.getTime()) / 1000
+        const newReactionTimes = [...reactionTimes, completionTime]
+        setReactionTimes(newReactionTimes)
+        setResultText(`Round ${round} 완료: ${completionTime.toFixed(3)}초`)
+        
+        setTimeout(() => {
+          if (round < totalRounds) {
+            const nextRoundNum = round + 1
+            setRound(nextRoundNum)
+            nextRound(nextRoundNum, newReactionTimes)
+          } else {
+            endGame(newReactionTimes)
+          }
+        }, 1200)
+      }
     }
   }
 
@@ -237,6 +237,7 @@ function App() {
         <ResultView
           bestTime={bestTime}
           avgTime={avgTime}
+          reactionTimes={reactionTimes}
           restartGame={restartGame}
         />
       )}
@@ -322,10 +323,12 @@ function GameView({
 function ResultView({
   bestTime,
   avgTime,
+  reactionTimes,
   restartGame
 }: {
   bestTime: number
   avgTime: number
+  reactionTimes: number[]
   restartGame: () => void
 }) {
   return (
@@ -334,6 +337,17 @@ function ResultView({
       <div className="result-card">
         <h1 className="result-title">🎉 축하합니다!</h1>
         <p className="result-subtitle">모든 라운드를 완료했습니다.</p>
+        
+        <div className="round-times">
+          <h3 className="round-times-title">⏱️ 라운드별 기록</h3>
+          {reactionTimes.map((time, index) => (
+            <div key={index} className="round-time-item">
+              <span className="round-label">Round {index + 1}</span>
+              <span className="round-time">{time.toFixed(3)}초</span>
+            </div>
+          ))}
+        </div>
+        
         <p className="result-stats">
           🏁 최고: {bestTime.toFixed(3)}s  평균: {avgTime.toFixed(3)}s
         </p>
