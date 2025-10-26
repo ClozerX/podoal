@@ -27,7 +27,6 @@ function App() {
   const [startTime, setStartTime] = useState<Date | null>(null)
   const [reactionTimes, setReactionTimes] = useState<number[]>([])
   const [resultText, setResultText] = useState('대기중...')
-  const [timerCount, setTimerCount] = useState(3)
   const [openSeats, setOpenSeats] = useState<string[]>([])
   const [selectedSeats, setSelectedSeats] = useState<Set<string>>(new Set())
   
@@ -260,17 +259,6 @@ function WaitingQueueView({ queueNumber }: { queueNumber: number }) {
           />
         </div>
         <p className="queue-message">현재 접속 인원이 많아 대기중입니다.</p>
-      </div>
-    </div>
-  )
-}
-
-// ⏱️ 카운트다운 화면
-function CountdownView({ timerCount }: { timerCount: number }) {
-  return (
-    <div className="countdown">
-      <div className={`countdown-text ${timerCount === 0 ? 'start' : ''}`}>
-        {timerCount > 0 ? timerCount : '🎟️ START!'}
       </div>
     </div>
   )
